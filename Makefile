@@ -1,9 +1,6 @@
-.PHONY: kind kind-clean network network-examples
+.PHONY: kind clean network network-examples
 
 kind:
-	kind create cluster
-
-kind-hugepages:
 	kind create cluster --config kind/kind-config.yaml
 
 network:

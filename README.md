@@ -11,11 +11,8 @@ Before you begin, ensure you have the following installed:
 - **Kind**: Refer to the [Kind installation guide](https://kind.sigs.k8s.io/docs/user/quick-start/)
 - **kubectl**: Check out the [kubectl installation instructions](https://kubernetes.io/docs/tasks/tools/)
 - (Optional) A Kubernetes context named `kind-kind` should be available in your configuration.
-- **HugePages**: Ensure that `/dev/hugepages` is mounted and accessible on the host where kind cluster is running. On Linux systems, you can mount it (if not already mounted) with:
+- **/dev mount**: Ensure that `/dev` is mounted and accessible on the host where kind cluster is running. This is used by qemu and libvirt to create interim tap device nodes.
   
-  ```bash
-  sudo mount -t hugetlbfs nodev /dev/hugepages
-
 
 ## Example Workflow
 

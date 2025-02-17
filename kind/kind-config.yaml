@@ -3,5 +3,5 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
   extraMounts:
-  - hostPath: /dev/hugepages
-    containerPath: /dev/hugepages
+  - hostPath: /dev
+    containerPath: /dev
