@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apiserver
+  namespace: system
+spec:
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: false
+      containers:
+        - name: apiserver
+          args:
+            - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
+            - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt
+            - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key
+            - --etcd-servers=https://localhost:2379
+            - --secure-port=9443
+            - --audit-log-path=-
+            - --enable-priority-and-fairness=false
+            - --audit-log-maxage=0
+            - --audit-log-maxbackup=0
+            - --tls-cert-file=/tmp/k8s-apiserver/serving-certs/tls.crt
+            - --tls-private-key-file=/tmp/k8s-apiserver/serving-certs/tls.key
+            - --machinepoollet-certificate-authority=/etc/ironcore-apiserver-machinepoollet-client/ca.crt
+            - --machinepoollet-client-certificate=/etc/ironcore-apiserver-machinepoollet-client/tls.crt
+            - --machinepoollet-client-key=/etc/ironcore-apiserver-machinepoollet-client/tls.key
+          ports:
+            - name: apiserver
+              $patch: delete
+            - containerPort: 9443
+              name: apiserver
+              protocol: TCP
+          securityContext:
+            runAsUser: 0
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 9443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9443
+              scheme: HTTPS
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          volumeMounts:
+            - mountPath: /etc/kubernetes/pki
+              name: k8s-certs
+              readOnly: true
+            - mountPath: /etc/ironcore-apiserver-machinepoollet-client
+              name: ironcore-apiserver-machinepoollet-client
+      # By using this, we make sure we end up on the same node as the etcd.
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Equal
+          effect: NoSchedule
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+        - name: k8s-certs
+          hostPath:
+            path: /etc/kubernetes/pki
+            type: Directory
+        - name: ironcore-apiserver-machinepoollet-client
+          secret:
+            secretName: ironcore-apiserver-machinepoollet-client

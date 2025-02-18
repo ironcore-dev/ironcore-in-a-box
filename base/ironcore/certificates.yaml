@@ -1,0 +1,31 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  namespace: ironcore-system
+  name: ironcore-apiserver-machinepoollet-client
+spec:
+  secretName: ironcore-apiserver-machinepoollet-client
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  commonName: ironcore-apiserver-machinepoollet-client
+  subject:
+    organizations:
+      - system:masters
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  usages:
+    - signing
+    - client auth
+  issuerRef:
+    name: ironcore-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ironcore-ca-issuer
+spec:
+  selfSigned: {}
