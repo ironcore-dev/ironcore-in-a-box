@@ -19,7 +19,7 @@ Before you begin, ensure you have the following installed:
 1. **Create the Cluster**  
    Set up the Kind cluster using:
    ```sh
-   make kind
+   make kind-cluster
    ```
 
 2. **Deploy Network Components**  
