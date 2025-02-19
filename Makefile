@@ -27,39 +27,44 @@ help: ## Display this help.
 
 .PHONY: kind kind-clean network network-examples
 
-kind-cluster:
+kind-cluster: kind ## Create a kind cluster
 	$(KIND) create cluster
 
-kind-hugepages:
+kind-hugepages: kind
 	$(KIND) create cluster --config kind/kind-config.yaml
 
-network:
+network: kind-cluster
 	$(KUBECTL) apply -f network/metalbond/metalbond.yaml --context kind-kind
 	$(KUBECTL) apply -k network/dpservice --context kind-kind
 	$(KUBECTL) apply -k network/metalnet --context kind-kind
 
-network-hugepages:
+network-hugepages: kind-cluster
 	$(KUBECTL) apply -f network/metalbond/metalbond.yaml --context kind-kind
 	$(KUBECTL) apply -k network/dpservice-hugepages --context kind-kind
 	$(KUBECTL) apply -k network/metalnet --context kind-kind
 
-network-examples:
+network-examples: kind-cluster
 	$(KUBECTL) apply -f network/examples/network.yaml --context kind-kind
 	$(KUBECTL) apply -f network/examples/networkinterface.yaml --context kind-kind
 	$(KUBECTL) apply -f network/examples/networkinterface2.yaml --context kind-kind
 
-clean:
+delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
-prepare: kubectl ## Prepare the environment
+prepare: kubectl cmctl ## Prepare the environment
 	$(KUBECTL) apply -k cluster/local/prepare
+	$(CMCTL) check api --wait 120s
 
-install: kustomize kubectl ## Install the ironcore stack
+install: prepare kustomize kubectl ## Install the ironcore stack
 	$(KUBECTL) apply -k cluster/local/ironcore
 	$(KUBECTL) apply -k cluster/local/ironcore-net
 
-uninstall: kubectl ## Uninstall the ironcore stack
+remove: remove-ironcore remove-ironcore-net ## Remove the ironcore stack
+
+remove-ironcore: kubectl ## Remove the ironcore stack
 	$(KUBECTL) delete -k cluster/local/ironcore
+
+remove-ironcore-net: kubectl ## Remove the ironcore stack
 	$(KUBECTL) delete -k cluster/local/ironcore-net
 
 unprepare: kubectl ## Unprepare the environment
@@ -80,11 +85,18 @@ KUBECTL ?= $(LOCALBIN)/kubectl-$(KUBECTL_VERSION)
 KUBECTL_BIN ?= $(LOCALBIN)/kubectl
 KUSTOMIZE ?= $(LOCALBIN)/kustomize-$(KUSTOMIZE_VERSION)
 KIND ?= $(LOCALBIN)/kind-$(KIND_VERSION)
+CMCTL ?= $(LOCALBIN)/cmctl-$(CMCTL_VERSION)
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.3.0
 KUBECTL_VERSION ?= v1.32.0
 KIND_VERSION ?= v0.27.0
+CMCTL_VERSION ?= latest
+
+.PHONY: cmctl
+cmctl: $(CMCTL) ## Download cmctl locally if necessary.
+$(CMCTL): $(LOCALBIN)
+	$(call go-install-tool,$(CMCTL),github.com/cert-manager/cmctl/v2,$(CMCTL_VERSION))
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
