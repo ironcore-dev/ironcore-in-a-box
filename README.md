@@ -1,61 +1,43 @@
 # ironcore-in-a-box
 
-# Deploying ironcore network layer on a Kind Cluster
+[![REUSE status](https://api.reuse.software/badge/github.com/ironcore-dev/ironcore-in-a-box)](https://api.reuse.software/info/github.com/ironcore-dev/ironcore-in-a-box)
+[![GitHub License](https://img.shields.io/static/v1?label=License&message=Apache-2.0&color=blue)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
 
-This repository includes a Makefile that simplifies the process of setting up a local Kubernetes cluster using [Kind](https://kind.sigs.k8s.io/) and deploying various network configurations.
+<p align="center">
+  <img src="docs/assets/logo.png" alt="IronCore in a Box" width="300"/>
+</p>
+
+## Overview
+
+**IronCore in a Box** is a project that brings up the IronCore stack inside a local [`kind`](https://kind.sigs.k8s.io/) cluster. It provides a local demo environment to illustrate the capabilities of IronCore.
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
+Ensure you have the following installed before running the project:
+- [`make`](https://www.gnu.org/software/make/)
+- [`go`](https://go.dev/)
 
-- **Kind**: Refer to the [Kind installation guide](https://kind.sigs.k8s.io/docs/user/quick-start/)
-- **kubectl**: Check out the [kubectl installation instructions](https://kubernetes.io/docs/tasks/tools/)
-- (Optional) A Kubernetes context named `kind-kind` should be available in your configuration.
-- **/dev mount**: Ensure that `/dev` is mounted and accessible on the host where kind cluster is running. This is used by qemu and libvirt to create interim tap device nodes.
-  
+## Installation
 
-## Example Workflow
-
-1. **Create the Cluster**  
-   Set up the Kind cluster using:
-   ```sh
-   make kind-cluster
-   ```
-
-2. **Deploy Network Components**  
-   Apply the dpservice, metalnet and metalbond configurations:
-   ```sh
-   make network
-   ```
-
-3. **Deploy Network Examples**  
-   Apply example network configurations (Example metalnet Network and NetworkInterface instances) :
-   ```sh
-   make network-examples
-   ```
-
-4. **Verify the Deployment**  
-   Ensure that the network resources are active:
-   ```sh
-   kubectl get networkinterfaces --context kind-kind -A
-   kubectl get networks --context kind-kind -A
-   ```
-
-5. **Clean Up the Cluster**  
-   Remove the Kind cluster when finished:
-   ```sh
-   make kind-clean
-   ```
-
-## Verifying the Deployment
-
-After running the `network-examples` target, verify that the network resources have been deployed correctly by executing:
-
+To set up and start the IronCore stack, run:
 ```sh
-kubectl get networkinterfaces --context kind-kind -A
-kubectl get networks --context kind-kind -A
+make up
 ```
 
-If your context name differs, substitute `kind-kind` with the appropriate name.
+This will create a local `kind` cluster and deploy the IronCore stack.
+
+## Cleanup
+
+To remove everything, run:
+```sh
+make down
+```
+
+This will delete the `kind` cluster and clean up any resources.
+
+## License
+
+[Apache-2.0](LICENSE)
 
 
