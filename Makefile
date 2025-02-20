@@ -48,6 +48,11 @@ network-examples: kind-cluster
 	$(KUBECTL) apply -f network/examples/networkinterface.yaml --context kind-kind
 	$(KUBECTL) apply -f network/examples/networkinterface2.yaml --context kind-kind
 
+install-libvirtd: kind ## Install libvirtd on the kind nodes
+	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
+		apt-get update && \
+		apt-get install -y libvirt-daemon libvirt-clients"
+
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
