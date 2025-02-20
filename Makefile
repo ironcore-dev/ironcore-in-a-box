@@ -57,20 +57,23 @@ delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
 ## Install components
-up: prepare ironcore ironcore-net apinetlet metalbond dpservice metalnet ## Bring up the ironcore stack
+up: prepare ironcore ironcore-net apinetlet metalbond dpservice metalnet metalnetlet ## Bring up the ironcore stack
 
 prepare: kubectl cmctl ## Prepare the environment
 	$(KUBECTL) apply -k cluster/local/prepare
 	$(CMCTL) check api --wait 120s
 
-ironcore: prepare kubectl ## Install the ironcore stack
+ironcore: prepare kubectl ## Install the ironcore
 	$(KUBECTL) apply -k cluster/local/ironcore
 
-ironcore-net: kubectl ## Install the ironcore-net stack
+ironcore-net: kubectl ## Install the ironcore-net
 	$(KUBECTL) apply -k cluster/local/ironcore-net
 
-apinetlet: kubectl ## Install the apinetlet stack
+apinetlet: kubectl ## Install the apinetlet
 	$(KUBECTL) apply -k cluster/local/apinetlet
+
+metalnetlet: kubectl ## Install the metalnetlet
+	$(KUBECTL) apply -k cluster/local/metalnetlet
 
 metalbond: kubectl ## Install metalbond
 	$(KUBECTL) apply -k cluster/local/metalbond
@@ -82,16 +85,19 @@ metalnet: kubectl ## Install metalnet
 	$(KUBECTL) apply -k cluster/local/metalnet
 
 ## Remove components
-down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond unprepare ## Remove the ironcore stack
+down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalnetlet unprepare ## Remove the ironcore stack
 
-remove-ironcore: kubectl ## Remove the ironcore stack
+remove-ironcore: kubectl ## Remove the ironcore
 	$(KUBECTL) delete -k cluster/local/ironcore
 
-remove-ironcore-net: kubectl ## Remove the ironcore stack
+remove-ironcore-net: kubectl ## Remove the ironcore
 	$(KUBECTL) delete -k cluster/local/ironcore-net
 
-remove-apinetlet: kubectl ## Remove the apinetlet stack
+remove-apinetlet: kubectl ## Remove the apinetlet
 	$(KUBECTL) delete -k cluster/local/apinetlet
+
+remove-metalnetlet: kubectl ## Remove the metalnetlet
+	$(KUBECTL) delete -k cluster/local/metalnetlet
 
 remove-metalbond: kubectl ## Remove metalbond
 	$(KUBECTL) delete -k cluster/local/metalbond

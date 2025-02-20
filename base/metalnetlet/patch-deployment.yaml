@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: metalnetlet-system
+  name: metalnetlet-controller-manager
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          imagePullPolicy: IfNotPresent

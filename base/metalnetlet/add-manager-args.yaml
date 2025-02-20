@@ -1,0 +1,9 @@
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: "--metalnet-namespace=metalnetlet-system"
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: "--name=local"
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: "--node-label=topology.core.apinet.ironcore.dev/zone=local"
