@@ -51,22 +51,33 @@ network-examples: kind-cluster
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
-up: prepare install-ironcore install-ironcore-net install-apinetlet ## Bring up the ironcore stack
+## Install components
+up: prepare ironcore ironcore-net apinetlet metalbond dpservice metalnet ## Bring up the ironcore stack
 
 prepare: kubectl cmctl ## Prepare the environment
 	$(KUBECTL) apply -k cluster/local/prepare
 	$(CMCTL) check api --wait 120s
 
-install-ironcore: prepare kustomize kubectl ## Install the ironcore stack
+ironcore: prepare kubectl ## Install the ironcore stack
 	$(KUBECTL) apply -k cluster/local/ironcore
 
-install-ironcore-net: kubectl ## Install the ironcore-net stack
+ironcore-net: kubectl ## Install the ironcore-net stack
 	$(KUBECTL) apply -k cluster/local/ironcore-net
 
-install-apinetlet: kubectl ## Install the apinetlet stack
+apinetlet: kubectl ## Install the apinetlet stack
 	$(KUBECTL) apply -k cluster/local/apinetlet
 
-remove: remove-ironcore remove-ironcore-net remove-apinetlet ## Remove the ironcore stack
+metalbond: kubectl ## Install metalbond
+	$(KUBECTL) apply -k cluster/local/metalbond
+
+dpservice: kubectl ## Install dpservice
+	$(KUBECTL) apply -k cluster/local/dpservice
+
+metalnet: kubectl ## Install metalnet
+	$(KUBECTL) apply -k cluster/local/metalnet
+
+## Remove components
+down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond unprepare ## Remove the ironcore stack
 
 remove-ironcore: kubectl ## Remove the ironcore stack
 	$(KUBECTL) delete -k cluster/local/ironcore
@@ -76,6 +87,15 @@ remove-ironcore-net: kubectl ## Remove the ironcore stack
 
 remove-apinetlet: kubectl ## Remove the apinetlet stack
 	$(KUBECTL) delete -k cluster/local/apinetlet
+
+remove-metalbond: kubectl ## Remove metalbond
+	$(KUBECTL) delete -k cluster/local/metalbond
+
+remove-dpservice: kubectl ## Remove dpservice
+	$(KUBECTL) delete -k cluster/local/dpservice
+
+remove-metalnet: kubectl ## Remove metalnet
+	$(KUBECTL) delete -k cluster/local/metalnet
 
 unprepare: kubectl ## Unprepare the environment
 	$(KUBECTL) delete -k cluster/local/prepare
@@ -93,12 +113,10 @@ CURL_RETRIES=3
 ## Tool Binaries
 KUBECTL ?= $(LOCALBIN)/kubectl-$(KUBECTL_VERSION)
 KUBECTL_BIN ?= $(LOCALBIN)/kubectl
-KUSTOMIZE ?= $(LOCALBIN)/kustomize-$(KUSTOMIZE_VERSION)
 KIND ?= $(LOCALBIN)/kind-$(KIND_VERSION)
 CMCTL ?= $(LOCALBIN)/cmctl-$(CMCTL_VERSION)
 
 ## Tool Versions
-KUSTOMIZE_VERSION ?= v5.3.0
 KUBECTL_VERSION ?= v1.32.0
 KIND_VERSION ?= v0.27.0
 CMCTL_VERSION ?= latest
@@ -107,11 +125,6 @@ CMCTL_VERSION ?= latest
 cmctl: $(CMCTL) ## Download cmctl locally if necessary.
 $(CMCTL): $(LOCALBIN)
 	$(call go-install-tool,$(CMCTL),github.com/cert-manager/cmctl/v2,$(CMCTL_VERSION))
-
-.PHONY: kustomize
-kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
-$(KUSTOMIZE): $(LOCALBIN)
-	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
 
 .PHONY: kind
 kind: $(KIND) ## Download kind locally if necessary.
