@@ -51,21 +51,31 @@ network-examples: kind-cluster
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
+up: prepare install-ironcore install-ironcore-net install-apinetlet ## Bring up the ironcore stack
+
 prepare: kubectl cmctl ## Prepare the environment
 	$(KUBECTL) apply -k cluster/local/prepare
 	$(CMCTL) check api --wait 120s
 
-install: prepare kustomize kubectl ## Install the ironcore stack
+install-ironcore: prepare kustomize kubectl ## Install the ironcore stack
 	$(KUBECTL) apply -k cluster/local/ironcore
+
+install-ironcore-net: kubectl ## Install the ironcore-net stack
 	$(KUBECTL) apply -k cluster/local/ironcore-net
 
-remove: remove-ironcore remove-ironcore-net ## Remove the ironcore stack
+install-apinetlet: kubectl ## Install the apinetlet stack
+	$(KUBECTL) apply -k cluster/local/apinetlet
+
+remove: remove-ironcore remove-ironcore-net remove-apinetlet ## Remove the ironcore stack
 
 remove-ironcore: kubectl ## Remove the ironcore stack
 	$(KUBECTL) delete -k cluster/local/ironcore
 
 remove-ironcore-net: kubectl ## Remove the ironcore stack
 	$(KUBECTL) delete -k cluster/local/ironcore-net
+
+remove-apinetlet: kubectl ## Remove the apinetlet stack
+	$(KUBECTL) delete -k cluster/local/apinetlet
 
 unprepare: kubectl ## Unprepare the environment
 	$(KUBECTL) delete -k cluster/local/prepare

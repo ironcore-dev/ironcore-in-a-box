@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/apinetlet
+
+patches:
+  - path: add-manager-args.yaml
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      namespace: apinetlet-system
+      name: apinetlet-controller-manager

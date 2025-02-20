@@ -18,27 +18,34 @@ spec:
             - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt
             - --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key
             - --etcd-servers=https://localhost:2379
-            - --secure-port=10443
+            - --secure-port=11443
             - --audit-log-path=-
             - --enable-priority-and-fairness=false
             - --audit-log-maxage=0
             - --audit-log-maxbackup=0
             - --tls-cert-file=/tmp/k8s-apiserver/serving-certs/tls.crt
             - --tls-private-key-file=/tmp/k8s-apiserver/serving-certs/tls.key
-            - --public-prefix=194.11.242.128/26
-            - --public-prefix=2a10:afc0:e013:c000::/52
+            - --public-prefix=100.0.0.0/24
+            - --public-prefix=fd12:3456:789a::/56
           ports:
             - name: apiserver
               $patch: delete
-            - containerPort: 10443
+            - containerPort: 11443
               name: apiserver
               protocol: TCP
           securityContext:
             runAsUser: 0
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 11443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /readyz
-              port: 10443
+              port: 11443
               scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
