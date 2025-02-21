@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        - name: provider
+          resources:
+            limits:
+              cpu: 200m
+              memory: 512Mi
+          volumeMounts:
+            - mountPath: /var/cfg/classes
+              name: supported-machine-classes
+            - mountPath: /var/lib/libvirt-provider
+              name: libvirt-images
+      volumes:
+        - name: supported-machine-classes
+          configMap:
+            name: supported-machine-classes
+        - name: libvirt-images
+          hostPath:
+            path: /var/lib/libvirt-provider

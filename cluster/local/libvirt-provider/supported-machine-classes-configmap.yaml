@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supported-machine-classes
+  namespace: libvirt-provider-system
+data:
+  supported-machine-classes.json: |-
+    [
+      {
+        "name": "t3-small",
+        "capabilities": {
+          "cpu_millis": 2000,
+          "memory_bytes": 2147483648
+        }
+      }
+    ]

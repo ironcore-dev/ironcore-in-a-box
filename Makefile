@@ -28,12 +28,21 @@ help: ## Display this help.
 .PHONY: kind kind-clean network network-examples
 
 kind-cluster: kind ## Create a kind cluster
-	$(KIND) create cluster
-
+	$(KIND) create cluster --image kindest/node:v1.32.0
+	
 install-libvirtd: kind ## Install libvirtd on the kind nodes
 	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
+		sed -i 's/UID_MAX.*/UID_MAX 65536/' /etc/login.defs && \
+		sed -i 's/#SYS_UID_MAX.*/SYS_UID_MAX 65536/' /etc/login.defs && \
+		sed -i 's/SUB_UID_MIN.*/SUB_UID_MIN 1/' /etc/login.defs && \
+		sed -i 's/SUB_UID_COUNT.*/SUB_UID_COUNT 100/' /etc/login.defs && \
+		sed -i 's/SYS_UID_MAX.*/SYS_UID_MAX 65536/' /etc/login.defs && \
+		sed -i '/exit 101/d' /usr/sbin/policy-rc.d && \
 		apt-get update && \
-		apt-get install -y libvirt-daemon libvirt-clients"
+		apt-get install -y libvirt-daemon libvirt-clients qemu-kvm libvirt-daemon-system virtinst ceph-common && \
+		systemctl restart libvirtd && \
+		systemctl restart virtlogd.service && \
+		systemctl restart virtlockd.service "
 
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
@@ -66,8 +75,12 @@ dpservice: kubectl ## Install dpservice
 metalnet: kubectl ## Install metalnet
 	$(KUBECTL) apply -k cluster/local/metalnet
 
+
+libvirt-provider: kubectl ## Install the libvirt-provider
+	$(KUBECTL) apply -k cluster/local/libvirt-provider
+
 ## Remove components
-down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalnetlet unprepare ## Remove the ironcore stack
+down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalnetlet remove-libvirt-provider unprepare ## Remove the ironcore stack
 
 remove-ironcore: kubectl ## Remove the ironcore
 	$(KUBECTL) delete -k cluster/local/ironcore
@@ -89,6 +102,9 @@ remove-dpservice: kubectl ## Remove dpservice
 
 remove-metalnet: kubectl ## Remove metalnet
 	$(KUBECTL) delete -k cluster/local/metalnet
+
+remove-libvirt-provider: kubectl ## Remove libvirt-provider
+	$(KUBECTL) delete -k cluster/local/libvirt-provider
 
 unprepare: kubectl ## Unprepare the environment
 	$(KUBECTL) delete -k cluster/local/prepare

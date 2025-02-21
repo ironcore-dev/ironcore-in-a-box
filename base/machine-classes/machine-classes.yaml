@@ -1,0 +1,9 @@
+apiVersion: compute.ironcore.dev/v1alpha1
+kind: MachineClass
+metadata:
+  labels:
+    environment: production
+  name: t3-small
+capabilities:
+  cpu: 2
+  memory: 2Gi

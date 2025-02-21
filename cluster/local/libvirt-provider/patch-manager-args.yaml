@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: libvirt-provider-system
+  name: libvirt-provider-controller-manager
+spec:
+  template:
+    spec:
+      initContainers: []
+      containers:
+        - name: manager
+          args:
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=127.0.0.1:8080
+            - --machine-pool-name=$(NODE_NAME)
+            - --provider-id=libvirt-provider://$(NODE_NAME)
+            - --machine-runtime-endpoint=unix:/var/run/libvirt-provider.sock
+            - --machine-downward-api-label=root-machine-namespace=metadata.labels['downward-api.libvirt-provider.ironcore.dev/root-machine-namespace']
+            - --machine-downward-api-label=root-machine-name=metadata.labels['downward-api.libvirt-provider.ironcore.dev/root-machine-name']
+            - --machine-downward-api-label=root-machine-uid=metadata.labels['downward-api.libvirt-provider.ironcore.dev/root-machine-uid']
+        - name: provider
+          args:
+            - --address=/var/run/libvirt-provider.sock
+            - --supported-machine-classes=/var/cfg/classes/supported-machine-classes.json
+            - --libvirt-socket=/var/run/libvirt/libvirt-sock
+            - --libvirt-uri=qemu:///system
+            - --libvirt-provider-dir=/var/lib/libvirt-provider
+            - --network-interface-plugin-name=apinet
+            - --gc-resync-interval=5s
+            - --gc-vm-graceful-shutdown-timeout=0
+            - --apinet-node-name=fra3-vm2.$(NODE_NAME)
+            - --enable-hugepages=false
+            - --preferred-domain-types=qemu
+            - --preferred-machine-types=virt
+            - --volume-cache-policy=writeback
+            - --zap-log-level=3
+
