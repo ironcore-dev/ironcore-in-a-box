@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: metalbond-client
+  labels:
+    app: metalbond-client
+spec:
+  selector:
+    matchLabels:
+      app: metalbond-client
+  template:
+    metadata:
+      labels:
+        app: metalbond-client
+    spec:
+      hostNetwork: true
+      containers:
+      - name: metalbond-client
+        image: ghcr.io/ironcore-dev/metalbond:master
+        securityContext: # so it can add routes
+          capabilities:
+            add:
+              - NET_ADMIN
+        command:
+          - "metalbond"
+          - "client"
+          - "--server"
+          - "[::1]:4711"
+          - "--tun=overlay-tun"
+          - "--subscribe"
+          - "100"
+          - "--install-routes=100#254"

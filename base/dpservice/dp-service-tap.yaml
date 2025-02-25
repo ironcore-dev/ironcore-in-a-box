@@ -59,7 +59,7 @@ spec:
             $patch: delete
             cpu: "2"
         volumeMounts:
-        # Preserve the hugepages mount
+        # do not mount hugepages
         - name: hugepages
           $patch: delete
         # Remove the "temp" mount

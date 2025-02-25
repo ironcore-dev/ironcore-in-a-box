@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: metalbond-daemonset
+  name: metalbond
   labels:
     app: metalbond
 spec:

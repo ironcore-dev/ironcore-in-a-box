@@ -30,6 +30,28 @@ help: ## Display this help.
 kind-cluster: kind ## Create a kind cluster
 	$(KIND) create cluster --image kindest/node:v1.32.0 --config kind/kind-config.yaml
 
+customize-network: metalbond dpservice metalnet ## Customize the network on the kind nodes
+	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
+		timeout 20s bash -c 'until ip link show dtap0 up >/dev/null 2>&1; do sleep 0.5; done' && \
+		ip link show dtap0 up >/dev/null 2>&1 || { echo \"dtap0 not up after 20s\"; exit 1; } && \
+		ip link add overlay-tun type ip6tnl mode any external ttl 32 && \
+		ip link set mtu 1500 dev overlay-tun && \
+		ip addr add 2001:db8:dead:beef::1/128 dev overlay-tun && \
+		ip link set overlay-tun up && \
+		sysctl -w net.ipv6.conf.all.forwarding=1 && \
+		sysctl -w net.ipv4.conf.eth0.rp_filter=0 && \
+		sysctl -w net.ipv4.ip_forward=1 && \
+		sysctl -w net.ipv4.conf.overlay-tun.rp_filter=0 && \
+		iptables -t mangle -I PREROUTING 1 -i overlay-tun -j MARK --set-mark 1 && \
+		echo '100 ironcore_eth0' >> /etc/iproute2/rt_tables && \
+		ip route add default via 172.18.0.1 dev eth0 table 100 && \
+		ip rule add fwmark 1 lookup 100 && \
+		for i in {1..3}; do \
+			ip -6 route add 2001:db8:fefe::/48 via fe80::1 dev dtap0 && \
+			break || \
+			{ echo \"Retrying route addition in 1s...\"; sleep 1; }; done && \
+		ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:00 dev dtap0 nud permanent"
+
 install-libvirtd: kind ## Install libvirtd on the kind nodes
 	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
 		sed -i 's/UID_MAX.*/UID_MAX 65536/' /etc/login.defs && \
@@ -48,7 +70,7 @@ delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
 ## Install components
-up: prepare ironcore ironcore-net apinetlet metalbond dpservice metalnet metalnetlet libvirt-provider ## Bring up the ironcore stack
+up: prepare ironcore ironcore-net apinetlet customize-network metalnetlet libvirt-provider ## Bring up the ironcore stack
 
 prepare: kubectl cmctl ## Prepare the environment
 	$(KUBECTL) apply -k cluster/local/prepare
