@@ -35,7 +35,7 @@ spec:
         - "--pf1=dtap1"
         - "--vf-pattern=dtapvf_"
         - "--nic-type=tap"
-        - "--ipv6=fc00:1::1"
+        - "--ipv6=2001:db8:fefe::1"
         - "--enable-ipv6-overlay"
         - "--dhcp-mtu=1337"
         - "--dhcp-dns=8.8.4.4"
@@ -59,7 +59,7 @@ spec:
             $patch: delete
             cpu: "2"
         volumeMounts:
-        # do not mount hugepages
+        # Preserve the hugepages mount
         - name: hugepages
           $patch: delete
         # Remove the "temp" mount

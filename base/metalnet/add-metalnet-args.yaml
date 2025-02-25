@@ -1,8 +1,5 @@
 - op: add
   path: /spec/template/spec/containers/1/args/-
-  value: "--enable-ipv6"
-- op: add
-  path: /spec/template/spec/containers/1/args/-
   value: "--tapdevice-mod"
 - op: replace
   path: /spec/template/spec/containers/0/args/0
@@ -24,7 +21,7 @@
   value: 28081
 - op: add
   path: /spec/template/spec/containers/1/args/-
-  value: --metalbond-peer=127.0.0.1:4711
+  value: --metalbond-peer=[::1]:4711
 - op: add
   path: /spec/template/spec/containers/1/args/-
-  value: --router-address=127.0.0.1
+  value: --router-address=2001:db8:dead:beef::1

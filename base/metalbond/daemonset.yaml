@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: metalbond
+  name: metalbond-daemonset
   labels:
     app: metalbond
 spec:
@@ -21,8 +21,8 @@ spec:
           - "metalbond"
           - "server"
           - "--listen"
-          - "127.0.0.1:4711"
+          - "[::1]:4711"
           - "--http"
-          - "127.0.0.1:4712"
+          - "[::1]:4712"
           - "--keepalive"
           - "3"
