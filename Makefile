@@ -28,32 +28,12 @@ help: ## Display this help.
 .PHONY: kind kind-clean network network-examples
 
 kind-cluster: kind ## Create a kind cluster
-	$(KIND) create cluster --config kind/kind-config.yaml
-
-network: kind
-	$(KUBECTL) apply -k cluster/local/metalbond
-	$(KUBECTL) apply -k cluster/local/dpservice
-	$(KUBECTL) apply -k cluster/local/metalnet
-
-network-examples: kind
-	$(KUBECTL) apply -f network/examples/network.yaml
-	$(KUBECTL) apply -f network/examples/networkinterface.yaml
-	$(KUBECTL) apply -f network/examples/networkinterface2.yaml
+	$(KIND) create cluster
 
 install-libvirtd: kind ## Install libvirtd on the kind nodes
 	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
 		apt-get update && \
 		apt-get install -y libvirt-daemon libvirt-clients"
-
-delete-network-examples: kind
-	$(KUBECTL) delete -f network/examples/network.yaml
-	$(KUBECTL) delete -f network/examples/networkinterface.yaml
-	$(KUBECTL) delete -f network/examples/networkinterface2.yaml
-
-delete-network: kind
-	$(KUBECTL) delete -k cluster/local/metalbond
-	$(KUBECTL) delete -k cluster/local/dpservice
-	$(KUBECTL) delete -k cluster/local/metalnet
 
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
