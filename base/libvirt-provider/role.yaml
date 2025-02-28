@@ -1,0 +1,98 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: libvirt-provider-apinet-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests/metalnetletclient
+  verbs:
+  - create
+- apiGroups:
+  - core.apinet.ironcore.dev
+  resources:
+  - instances
+  - networkinterfaces
+  - networks
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - core.apinet.ironcore.dev
+  resources:
+  - instances/finalizers
+  - networkinterfaces/finalizers
+  - networks/finalizers
+  - nodes/finalizers
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - core.apinet.ironcore.dev
+  resources:
+  - instances/status
+  - networkinterfaces/status
+  - networks/status
+  - nodes/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - core.apinet.ironcore.dev
+  resources:
+  - loadbalancerroutings
+  - loadbalancers
+  - natgateways
+  - nattables
+  - networkpolicies
+  - networkpolicyrules
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - core.apinet.ironcore.dev
+  resources:
+  - nodes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch

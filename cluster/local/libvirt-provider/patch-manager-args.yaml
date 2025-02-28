@@ -31,7 +31,7 @@ spec:
             - --apinet-node-name=fra3-vm2.$(NODE_NAME)
             - --enable-hugepages=false
             - --preferred-domain-types=qemu
-            - --preferred-machine-types=virt
+            - --preferred-machine-types=virt,pc-q35
             - --volume-cache-policy=writeback
             - --zap-log-level=3
 

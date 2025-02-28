@@ -2,7 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - git@github.com/ironcore-dev/libvirt-provider/config/default?ref=be4f303a9733a663365ed45e4446a651ee4d1fe8
+  - github.com/ironcore-dev/libvirt-provider/config/default?ref=be4f303a9733a663365ed45e4446a651ee4d1fe8
+  - role-binding.yaml
+  - role.yaml
 
 images:
   - name: machinepoollet

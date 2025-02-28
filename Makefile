@@ -29,7 +29,7 @@ help: ## Display this help.
 
 kind-cluster: kind ## Create a kind cluster
 	$(KIND) create cluster --image kindest/node:v1.32.0
-	
+
 install-libvirtd: kind ## Install libvirtd on the kind nodes
 	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
 		sed -i 's/UID_MAX.*/UID_MAX 65536/' /etc/login.defs && \
@@ -48,7 +48,7 @@ delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
 ## Install components
-up: prepare ironcore ironcore-net apinetlet metalbond dpservice metalnet metalnetlet ## Bring up the ironcore stack
+up: prepare ironcore ironcore-net apinetlet metalbond dpservice metalnet metalnetlet libvirt-provider ## Bring up the ironcore stack
 
 prepare: kubectl cmctl ## Prepare the environment
 	$(KUBECTL) apply -k cluster/local/prepare
@@ -76,7 +76,7 @@ metalnet: kubectl ## Install metalnet
 	$(KUBECTL) apply -k cluster/local/metalnet
 
 
-libvirt-provider: kubectl ## Install the libvirt-provider
+libvirt-provider: kubectl install-libvirtd ## Install the libvirt-provider
 	$(KUBECTL) apply -k cluster/local/libvirt-provider
 
 ## Remove components
