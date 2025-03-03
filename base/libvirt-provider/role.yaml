@@ -42,7 +42,7 @@ rules:
   - core.apinet.ironcore.dev
   resources:
   - instances
-  - networkinterfaces
+  - nodes
   - networks
   verbs:
   - get
@@ -87,7 +87,7 @@ rules:
 - apiGroups:
   - core.apinet.ironcore.dev
   resources:
-  - nodes
+  - networkinterfaces
   verbs:
   - create
   - delete

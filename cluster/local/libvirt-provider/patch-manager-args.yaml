@@ -28,7 +28,7 @@ spec:
             - --network-interface-plugin-name=apinet
             - --gc-resync-interval=5s
             - --gc-vm-graceful-shutdown-timeout=0
-            - --apinet-node-name=fra3-vm2.$(NODE_NAME)
+            - --apinet-node-name=local.$(NODE_NAME)
             - --enable-hugepages=false
             - --preferred-domain-types=qemu
             - --preferred-machine-types=virt,pc-q35
