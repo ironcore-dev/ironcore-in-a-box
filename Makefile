@@ -30,10 +30,10 @@ help: ## Display this help.
 kind-cluster: kind ## Create a kind cluster
 	$(KIND) create cluster --image kindest/node:v1.32.0 --config kind/kind-config.yaml
 
-customize-network: metalbond dpservice metalnet ## Customize the network on the kind nodes
+customize-network: metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
 	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
-		timeout 20s bash -c 'until ip link show dtap0 up >/dev/null 2>&1; do sleep 0.5; done' && \
-		ip link show dtap0 up >/dev/null 2>&1 || { echo \"dtap0 not up after 20s\"; exit 1; } && \
+		timeout 30s bash -c 'until ip link show dtap0 up >/dev/null 2>&1; do sleep 0.5; done' && \
+		ip link show dtap0 up >/dev/null 2>&1 || { echo \"dtap0 not up after 30s\"; exit 1; } && \
 		ip link add overlay-tun type ip6tnl mode any external ttl 32 && \
 		ip link set mtu 1500 dev overlay-tun && \
 		ip addr add 2001:db8:dead:beef::1/128 dev overlay-tun && \
@@ -91,6 +91,9 @@ metalnetlet: kubectl ## Install the metalnetlet
 metalbond: kubectl ## Install metalbond
 	$(KUBECTL) apply -k cluster/local/metalbond
 
+metalbond-client: kubectl ## Install metalbond-client
+	$(KUBECTL) apply -k cluster/local/metalbond-client
+
 dpservice: kubectl ## Install dpservice
 	$(KUBECTL) apply -k cluster/local/dpservice
 
@@ -102,7 +105,7 @@ libvirt-provider: kubectl install-libvirtd ## Install the libvirt-provider
 	$(KUBECTL) apply -k cluster/local/libvirt-provider
 
 ## Remove components
-down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalnetlet remove-libvirt-provider unprepare ## Remove the ironcore stack
+down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalbond-client remove-metalnetlet remove-libvirt-provider unprepare ## Remove the ironcore stack
 
 remove-ironcore: kubectl ## Remove the ironcore
 	$(KUBECTL) delete -k cluster/local/ironcore
@@ -118,6 +121,9 @@ remove-metalnetlet: kubectl ## Remove the metalnetlet
 
 remove-metalbond: kubectl ## Remove metalbond
 	$(KUBECTL) delete -k cluster/local/metalbond
+
+remove-metalbond-client: kubectl ## Remove metalbond
+	$(KUBECTL) delete -k cluster/local/metalbond-client
 
 remove-dpservice: kubectl ## Remove dpservice
 	$(KUBECTL) delete -k cluster/local/dpservice

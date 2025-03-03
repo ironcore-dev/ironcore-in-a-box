@@ -25,7 +25,7 @@ spec:
             - --audit-log-maxbackup=0
             - --tls-cert-file=/tmp/k8s-apiserver/serving-certs/tls.crt
             - --tls-private-key-file=/tmp/k8s-apiserver/serving-certs/tls.key
-            - --public-prefix=100.0.0.0/24
+            - --public-prefix=172.18.1.1/24
             - --public-prefix=fd12:3456:789a::/56
           ports:
             - name: apiserver
