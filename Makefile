@@ -28,7 +28,7 @@ help: ## Display this help.
 .PHONY: kind kind-clean network network-examples
 
 kind-cluster: kind ## Create a kind cluster
-	$(KIND) create cluster --image kindest/node:v1.32.0
+	$(KIND) create cluster --image kindest/node:v1.32.0 --config kind/kind-config.yaml
 
 install-libvirtd: kind ## Install libvirtd on the kind nodes
 	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
