@@ -7,10 +7,7 @@ spec:
     - "IPv4"
   ips:
     - 10.0.0.2
+  virtualIP: 172.18.1.1
   nodeName: kind-control-plane
-  nat:
-    ip: 10.0.0.5
-    port: 1024
-    endPort: 1087
   networkRef:
     name: network-sample
