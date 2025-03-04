@@ -4,7 +4,7 @@ SPDX-PackageSupplier = "IronCore authors <ospo@sap.com>"
 SPDX-PackageDownloadLocation = "https://github.com/ironcore-dev/ironcore-in-a-box"
 
 [[annotations]]
-path = [".github/**", ".gitignore", "CODEOWNERS", "Makefile",  "base/**", "cluster/**", "hack/**", "kind/**", "network/**"]
+path = [".github/**", ".gitignore", "CODEOWNERS", "Makefile",  "base/**", "cluster/**", "hack/**", "kind/**", "examples/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2023 SAP SE or an SAP affiliate company and IronCore contributors"
 SPDX-License-Identifier = "Apache-2.0"

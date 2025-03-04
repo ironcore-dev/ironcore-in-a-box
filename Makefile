@@ -30,8 +30,8 @@ help: ## Display this help.
 kind-cluster: kind ## Create a kind cluster
 	$(KIND) create cluster --image kindest/node:v1.32.0 --config kind/kind-config.yaml
 
-customize-network: metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
-	$(KIND) get nodes | xargs -I {} sh -c 'docker cp hack/customize-network.sh {}:/customize-network.sh && docker exec {} bash -c "bash /customize-network.sh"'
+setup-network: metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
+	$(KIND) get nodes | xargs -I {} sh -c 'docker cp hack/setup-network.sh {}:/setup-network.sh && docker exec {} bash -c "bash /setup-network.sh"'
 
 install-libvirtd: kind ## Install libvirtd on the kind nodes
 	$(KIND) get nodes | xargs -I {} docker exec {} bash -c "\
@@ -51,7 +51,7 @@ delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
 ## Install components
-up: prepare ironcore ironcore-net apinetlet customize-network metalnetlet libvirt-provider ## Bring up the ironcore stack
+up: prepare ironcore ironcore-net apinetlet setup-network metalnetlet libvirt-provider ## Bring up the ironcore stack
 
 prepare: kubectl cmctl ## Prepare the environment
 	$(KUBECTL) apply -k cluster/local/prepare

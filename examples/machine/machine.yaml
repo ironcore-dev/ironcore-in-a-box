@@ -1,0 +1,43 @@
+apiVersion: compute.ironcore.dev/v1alpha1
+kind: Machine
+metadata:
+  name: webapp
+spec:
+  image: ghcr.io/ironcore-dev/os-images/gardenlinux:latest
+  networkInterfaces:
+    - name: default
+      networkInterfaceRef:
+        name: webapp
+  machineClassRef:
+    name: t3-small
+---
+apiVersion: networking.ironcore.dev/v1alpha1
+kind: Network
+metadata:
+  name: webapp
+---
+apiVersion: networking.ironcore.dev/v1alpha1
+kind: VirtualIP
+metadata:
+  name: webapp
+spec:
+  ipFamily: IPv4
+  type: Public
+---
+apiVersion: networking.ironcore.dev/v1alpha1
+kind: NetworkInterface
+metadata:
+  labels:
+    foo: bar
+  name: webapp
+spec:
+  networkRef:
+    name: webapp
+  ipFamilies:
+    - IPv4
+  ips:
+    - value: 10.0.0.1 # internal IP
+  virtualIP:
+    virtualIPRef:
+      name: webapp
+
