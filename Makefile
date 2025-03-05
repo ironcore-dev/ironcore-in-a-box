@@ -8,6 +8,8 @@ endif
 GOARCH  := $(shell go env GOARCH)
 GOOS    := $(shell go env GOOS)
 
+KIND_IMAGE := kindest/node:v1.32.0
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -25,10 +27,8 @@ GOOS    := $(shell go env GOOS)
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-.PHONY: kind kind-clean network network-examples
-
 kind-cluster: kind ## Create a kind cluster
-	$(KIND) create cluster --image kindest/node:v1.32.0 --config kind/kind-config.yaml
+	$(KIND) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml
 
 setup-network: metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
 	$(KIND) get nodes | xargs -I {} sh -c 'docker cp hack/setup-network.sh {}:/setup-network.sh && docker exec {} bash -c "bash /setup-network.sh"'
@@ -45,7 +45,7 @@ install-libvirtd: kind ## Install libvirtd on the kind nodes
 		apt-get install -y libvirt-daemon libvirt-clients qemu-kvm libvirt-daemon-system virtinst ceph-common && \
 		systemctl restart libvirtd && \
 		systemctl restart virtlogd.service && \
-		systemctl restart virtlockd.service "
+		systemctl restart virtlockd.service"
 
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
