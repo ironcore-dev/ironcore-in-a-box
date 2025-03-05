@@ -16,7 +16,7 @@ spec:
       hostNetwork: true
       containers:
       - name: metalbond-client
-        image: ghcr.io/ironcore-dev/metalbond:feature-arp_spoofer
+        image: ghcr.io/ironcore-dev/metalbond:sha-fa316e8
         securityContext: # so it can add routes
           capabilities:
             add:

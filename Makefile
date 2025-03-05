@@ -53,7 +53,7 @@ delete: ## Delete the kind cluster
 ## Install components
 up: prepare ironcore ironcore-net apinetlet setup-network metalnetlet libvirt-provider ## Bring up the ironcore stack
 
-prepare: kubectl cmctl ## Prepare the environment
+prepare: kubectl cmctl kind-cluster ## Prepare the environment
 	$(KUBECTL) apply -k cluster/local/prepare
 	$(CMCTL) check api --wait 120s
 
