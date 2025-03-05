@@ -22,6 +22,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+    if: ${{ github.event.label.name == 'ok-to-image' }} || ${{ github.event.label.name == 'ok-to-🐳' }} || ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4

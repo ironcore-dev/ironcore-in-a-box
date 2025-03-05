@@ -8,7 +8,8 @@ endif
 GOARCH  := $(shell go env GOARCH)
 GOOS    := $(shell go env GOOS)
 
-KIND_IMAGE := kindest/node:v1.32.0
+# Instead of using kindest/node:v1.32.0 we use our own image with the necessary tools installed
+KIND_IMAGE := ghcr.io/ironcore-dev/kind-node:latest
 
 ##@ General
 
