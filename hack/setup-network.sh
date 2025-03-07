@@ -2,11 +2,10 @@
 
 set -e
 # Print message to console
-echo "Customize network in progress. It may take up to 30 seconds."
+echo "Customize network in progress..."
 
-# Ensure dtap0 interface is up
-timeout 30s bash -c 'until ip link show dtap0 up >/dev/null 2>&1; do sleep 0.5; done'
-ip link show dtap0 up >/dev/null 2>&1 || { echo "dtap0 not up after 30s"; exit 1; }
+# Some environments disable ipv6 per default
+sysctl -w net.ipv6.conf.all.disable_ipv6=0
 
 # Create and configure overlay-tun interface
 ip link add overlay-tun type ip6tnl mode any external ttl 32

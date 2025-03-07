@@ -32,6 +32,7 @@ kind-cluster: kind ## Create a kind cluster
 	$(KIND) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml
 
 setup-network: metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
+	$(KUBECTL) rollout status daemonset/dp-service -n dp-service-system --timeout=360s && \
 	$(KIND) get nodes | xargs -I {} sh -c 'docker cp hack/setup-network.sh {}:/setup-network.sh && docker exec {} bash -c "bash /setup-network.sh"'
 
 install-libvirtd: kind ## Install libvirtd on the kind nodes
