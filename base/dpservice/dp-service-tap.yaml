@@ -37,7 +37,7 @@ spec:
         - "--nic-type=tap"
         - "--ipv6=2001:db8:fefe::1"
         - "--enable-ipv6-overlay"
-        - "--dhcp-mtu=1337"
+        - "--dhcp-mtu=1450"
         - "--dhcp-dns=8.8.4.4"
         - "--dhcp-dns=8.8.8.8"
         - "--dhcpv6-dns=2001:4860:4860::6464"

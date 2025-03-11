@@ -15,6 +15,7 @@
 ## Prerequisites
 
 Ensure you have the following installed before running the project:
+- [`curl`](https://curl.se/)
 - [`make`](https://www.gnu.org/software/make/)
 - [`go`](https://go.dev/)
 - [`docker`](https://www.docker.com/)

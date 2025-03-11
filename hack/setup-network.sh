@@ -34,4 +34,5 @@ for i in {1..3}; do
 done
 
 # Add permanent neighbor entry
-ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:00 dev dtap0 nud permanent
+ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:00 dev dtap0 router nud permanent
+ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:01 dev dtap1 router nud permanent
