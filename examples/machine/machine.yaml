@@ -4,6 +4,7 @@ metadata:
   name: webapp
 spec:
   image: ghcr.io/ironcore-dev/os-images/gardenlinux:latest
+    #  image: ghcr.io/ironcore-dev/os-images/gardenlinux-amd64:latest
   networkInterfaces:
     - name: default
       networkInterfaceRef:
