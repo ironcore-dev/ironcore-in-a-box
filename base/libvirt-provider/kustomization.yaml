@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - github.com/ironcore-dev/libvirt-provider/config/default?ref=5806bdcf0c292780a6a7f871127755ae223439b1
+  - github.com/ironcore-dev/libvirt-provider/config/default?ref=bd053c92d7fbf365a0cd142e85186baf90fb14e4
   - role-binding.yaml
   - role.yaml
 
@@ -12,7 +12,7 @@ images:
     digest: sha256:7a4584539882e9fb22f213756b2cfe37f8f1d43896351545fc4192ce9825d970
   - name: libvirt-provider
     newName: ghcr.io/ironcore-dev/libvirt-provider
-    digest: sha256:96aecb77601e5109645ff595f0da105f5cc2d89bd578dd2d502a6129ff0e764b
+    digest: sha256:c22382166e944c7aa204c43bc66d8858440400bf6fb5c83695d26e0bdd135586
 
 patches:
   - path: patch-manager-daemonset.yaml
