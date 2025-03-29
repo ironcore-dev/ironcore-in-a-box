@@ -24,7 +24,7 @@ iptables -t mangle -I PREROUTING 1 -i overlay-tun -j MARK --set-mark 1
 
 # Configure routing
 echo '100 ironcore_eth0' >> /etc/iproute2/rt_tables
-ip route add default via 172.18.0.1 dev eth0 table 100
+ip route add default via $(ip r | grep default | awk '{print $3}') dev eth0 table 100
 ip rule add fwmark 1 lookup 100
 
 # Add IPv6 route with retry mechanism

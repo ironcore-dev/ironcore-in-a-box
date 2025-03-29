@@ -140,9 +140,14 @@ $(KIND): $(LOCALBIN)
 .PHONY: kubectl
 kubectl: $(KUBECTL) ## Download kubectl locally if necessary.
 $(KUBECTL): $(LOCALBIN)
-	curl --retry $(CURL_RETRIES) -fsL https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL)
-	ln -sf "$(KUBECTL)" "$(KUBECTL_BIN)"
-	chmod +x "$(KUBECTL_BIN)" "$(KUBECTL)"
+	@if ! $(KUBECTL) version &>/dev/null; then \
+		echo "$(KUBECTL) is not installed. Installing kubectl..."; \
+		curl --retry $(CURL_RETRIES) -fsL https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL); \
+		ln -sf "$(KUBECTL)" "$(KUBECTL_BIN)"; \
+		chmod +x "$(KUBECTL_BIN)" "$(KUBECTL)"; \
+	else \
+		echo "$(KUBECTL) is already installed."; \
+	fi
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary (ideally with version)
