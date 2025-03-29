@@ -130,7 +130,7 @@ CMCTL_VERSION ?= latest
 .PHONY: cmctl
 cmctl: $(CMCTL) ## Download cmctl locally if necessary.
 $(CMCTL): $(LOCALBIN)
-        $(call go-install-tool,$(CMCTL),github.com/cert-manager/cmctl/v2,$(CMCTL_VERSION))
+	$(call go-install-tool,$(CMCTL),github.com/cert-manager/cmctl/v2,$(CMCTL_VERSION))
 
 .PHONY: kind
 kind: $(KIND) ## Download kind locally if necessary.
