@@ -2,12 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - github.com/ironcore-dev/metalnet/config/default?ref=v0.3.11
+  - github.com/ironcore-dev/metalnet/config/default?ref=824f6d045941e1d303722310d930fc1a96a3cc0d
 
 images:
   - name: controller
     newName: ghcr.io/ironcore-dev/metalnet-controller-manager
-    newTag: v0.3.11
+    newTag: pr-329
 
 patches:
   - path: add-metalnet-args.yaml
