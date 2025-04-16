@@ -52,8 +52,7 @@ This command will:
 
 ## Examples
 
-You can find examples of how to use the IronCore API in the [Examples](examples/) directory. You can spin up a VM in a [VPC / Overlay Network](https://en.wikipedia.org/wiki/Virtual_private_cloud) with a virtual IP
-and using ignition and that virtual ip, you can log into it.
+You can find examples of how to use the IronCore API in the [Examples](examples/) directory. You can spin up a VM in a [VPC / Overlay Network](https://en.wikipedia.org/wiki/Virtual_private_cloud) with a virtual IP. By default, VMs enable password login for easy accessing and testing. The default username and password are `ironcore` and `best123`. Customized ignition can be also generated and used for other purposes.
 
 Your local "datacenter" is at your fingertips to test. Ironcore API documentation can be found [here](https://ironcore-dev.github.io/ironcore/api-reference/overview/) which shows the whole capabilities of IronCore.
 
