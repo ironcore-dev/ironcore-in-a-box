@@ -33,11 +33,25 @@ IronCore relies on specific Linux kernel features. Ensure your kernel has the fo
 
 Most modern Linux distributions have these enabled by default. However, minimal installations or older versions might require a custom kernel build or module loading.
 
-**Windows/WSL2 Users:** The default WSL2 kernel often lacks these options. You will likely need to compile a custom kernel. Please follow the specific instructions here: [Compiling a Custom WSL2 Kernel](docs/windows_wsl2_kernel.md).
+### Windows/WSL2 Requirements
+
+**Important for Windows/WSL2 Users** 
+
+The default WSL2 kernel often lacks the Linux options. You will likely need to compile a custom kernel. Please ensure you have followed the [WSL2 Custom Kernel Guide](docs/windows_wsl2_kernel.md) *before* proceeding with the installation if the required kernel modules are missing.
+
+### MacOS Requirements
+
+When using docker, you cannot directly connect to container IPs attached to the docker network bridge. [docker-mac-net-connect](https://github.com/chipmk/docker-mac-net-connect) is a lightweight service daemon based on Wireguard which automatically maintains the appropriate routing tables on your macOS.
+
+```bash
+# Install via Homebrew
+$ brew install chipmk/tap/docker-mac-net-connect
+
+# Run the service and register it to launch at boot
+$ sudo brew services start chipmk/tap/docker-mac-net-connect
+```
 
 ## Installation
-
-**Important for Windows/WSL2 Users:** Please ensure you have followed the [WSL2 Custom Kernel Guide](docs/windows_wsl2_kernel.md) *before* proceeding with the installation if the required kernel modules are missing.
 
 To set up and start the IronCore stack, run the following command from the root of this repository:
 
