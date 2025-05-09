@@ -41,7 +41,9 @@ The default WSL2 kernel often lacks the Linux options. You will likely need to c
 
 ### MacOS Requirements
 
-When using docker, you cannot directly connect to container IPs attached to the docker network bridge. [docker-mac-net-connect](https://github.com/chipmk/docker-mac-net-connect) is a lightweight service daemon based on Wireguard which automatically maintains the appropriate routing tables on your macOS.
+When using docker, you cannot directly connect to container IPs attached to the docker network bridge. [docker-mac-net-connect](https://github.com/chipmk/docker-mac-net-connect) is a lightweight service daemon based on Wireguard which automatically maintains the appropriate routing tables on your macOS. This tool is able to make it possible to access provisioned VM directly from Mac's shell, without entering the Kind virtual machine.
+
+You can install and make it running each time when Mac is booted by using following commands. If you would like to start/stop this tool manually each time, simply run `sudo docker-mac-net-connect` after installation.
 
 ```bash
 # Install via Homebrew
