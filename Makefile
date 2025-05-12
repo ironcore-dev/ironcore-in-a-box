@@ -33,7 +33,7 @@ kind-cluster: kind ## Create a kind cluster
 
 setup-network: metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
 	$(KUBECTL) rollout status daemonset/dp-service -n dp-service-system --timeout=360s && \
-	$(KIND) get nodes | xargs -I {} sh -c 'docker cp hack/setup-network.sh {}:/setup-network.sh && docker exec {} bash -c "bash /setup-network.sh"'
+	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-network.sh {}:/setup-network.sh && $(CRE) exec {} bash -c "bash /setup-network.sh"'
 
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
@@ -121,6 +121,10 @@ KUBECTL ?= $(LOCALBIN)/kubectl-$(KUBECTL_VERSION)
 KUBECTL_BIN ?= $(LOCALBIN)/kubectl
 KIND ?= $(LOCALBIN)/kind-$(KIND_VERSION)
 CMCTL ?= $(LOCALBIN)/cmctl-$(CMCTL_VERSION)
+CRE ?= $(shell if cre=$$(command -v docker); then echo $$cre; elif cre=$$(command -v podman); then echo $$cre; fi)
+ifeq ($(CRE),)
+$(error no docker or podman found, exiting...)
+endif
 
 ## Tool Versions
 KUBECTL_VERSION ?= v1.32.0
