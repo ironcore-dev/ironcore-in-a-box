@@ -21,7 +21,7 @@ Ensure you have the following installed before running the project:
 * [curl](https://curl.se/)
 * [make](https://www.gnu.org/software/make/)
 * [go](https://go.dev/)
-* [docker](https://www.docker.com/) or [podman](https://podman.io/)
+* [docker](https://www.docker.com/) (recommended) or [podman](https://podman.io/) (refer to [podman user guidance](docs/podman.md))
 
 ### Linux Kernel Requirements
 
@@ -41,7 +41,7 @@ The default WSL2 kernel often lacks the Linux options. You will likely need to c
 
 ### MacOS Requirements
 
-When using docker, you cannot directly connect to container IPs attached to the docker network bridge. [docker-mac-net-connect](https://github.com/chipmk/docker-mac-net-connect) is a lightweight service daemon based on Wireguard which automatically maintains the appropriate routing tables on your macOS. This tool is able to make it possible to access provisioned VM directly from Mac's shell, without entering the Kind virtual machine.
+When using docker, you cannot directly connect to container IPs attached to the docker network bridge. [docker-mac-net-connect](https://github.com/chipmk/docker-mac-net-connect) is a lightweight service daemon based on Wireguard which automatically maintains the appropriate routing tables on your macOS. This tool is able to make it possible to use the VIP to access provisioned VM directly from Mac's shell, without entering the docker virtual machine.
 
 You can install and make it running each time when Mac is booted by using following commands. If you would like to start/stop this tool manually each time, simply run `sudo docker-mac-net-connect` after installation.
 
@@ -51,47 +51,6 @@ $ brew install chipmk/tap/docker-mac-net-connect
 
 # Run the service and register it to launch at boot
 $ sudo brew services start chipmk/tap/docker-mac-net-connect
-```
-
-### Using podman on MacOS
-
-The limitation mentioned above, for docker, still applies.
-This was tested and applies to podman 5.4 and podman machine running Fedora CoreOS 41.
-Running everything with podman requires that the podman machine runs in rootful mode; more details below.
-
-```bash
-NAME="Fedora Linux"
-VERSION="41.20250215.3.0 (CoreOS)"
-RELEASE_TYPE=stable
-ID=fedora
-VERSION_ID=41
-VERSION_CODENAME=""
-PLATFORM_ID="platform:f41"
-PRETTY_NAME="Fedora CoreOS 41.20250215.3.0"
-```
-
-```bash
-# we assume no other machines might be running, shutting down the default one
-podman machine stop
-
-# we create a new podman machine
-# 2-4GiB of memory are unfortunately not enough
-# must be rootful
-podman machine init --cpus 8 --memory 8192 --rootful ironcore-in-a-box
-podman machine start ironcore-in-a-box
-
-# change the default system connection
-podman system connection default ironcore-in-a-box-root
-
-# the dp-service requires some extra kernel modules
-podman machine ssh ironcore-in-a-box "sudo rpm-ostree install kernel-modules-extra"
-
-# this kernel modules installation requires a restart of the VM
-podman machine stop ironcore-in-a-box
-podman machine start ironcore-in-a-box
-
-# removing the sch_multiq kernel module from the blacklist
-podman machine ssh ironcore-in-a-box grep -rle \"^blacklist sch_multiq\" /etc/modprobe.d/ \| xargs -r sudo sed -i \'s/blacklist sch_multiq/#blacklist sch_multiq/\'
 ```
 
 ## Installation
@@ -109,7 +68,7 @@ This command will:
 
 ## Examples
 
-You can find examples of how to use the IronCore API in the [Examples](examples/) directory. You can spin up a VM in a [VPC / Overlay Network](https://en.wikipedia.org/wiki/Virtual_private_cloud) with a virtual IP. By default, VMs enable password login for easy accessing and testing. The default username and password are `ironcore` and `best123`. Customized ignition can be also generated and used for other purposes.
+You can find examples of how to use the IronCore API in the [Examples](examples/) directory. You can spin up a VM in a [VPC / Overlay Network](https://en.wikipedia.org/wiki/Virtual_private_cloud) with a virtual IP. Using the command `kubectl get machine,network,nic,virtualip` to find out status and more information regarding the provisioned VM. By default, VMs enable password login for easy accessing and testing. The default username and password are `ironcore` and `best123`. Customized ignition can be also generated and used for other purposes.
 
 Your local "datacenter" is at your fingertips to test. Ironcore API documentation can be found [here](https://ironcore-dev.github.io/ironcore/api-reference/overview/) which shows the whole capabilities of IronCore.
 
