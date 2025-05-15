@@ -2,20 +2,8 @@
 
 ## MacOS
 
-The limitation mentioned above, for docker, still applies.
-This was tested and applies to podman 5.4 and podman machine running Fedora CoreOS 41.
+This was tested and applies to podman 5.4 and the default podman-machine.
 Running everything with podman requires that the podman machine runs in rootful mode; more details below.
-
-```bash
-NAME="Fedora Linux"
-VERSION="41.20250215.3.0 (CoreOS)"
-RELEASE_TYPE=stable
-ID=fedora
-VERSION_ID=41
-VERSION_CODENAME=""
-PLATFORM_ID="platform:f41"
-PRETTY_NAME="Fedora CoreOS 41.20250215.3.0"
-```
 
 ```bash
 # we assume no other machines might be running, shutting down the default one
