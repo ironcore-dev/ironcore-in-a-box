@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - github.com/ironcore-dev/cloud-hypervisor-provider/config/default?ref=ed84aa2164fe0b53ee7fbe39364cda64f859927c
+  - role-binding.yaml
+  - role.yaml
+
+images:
+  - name: machinepoollet
+    newName: ghcr.io/ironcore-dev/ironcore-machinepoollet
+    digest: sha256:7a4584539882e9fb22f213756b2cfe37f8f1d43896351545fc4192ce9825d970
+  - name: cloud-hypervisor-provider
+    newName: ghcr.io/ironcore-dev/cloud-hypervisor-provider
+    digest: sha256:645b8044ddf422938866c9ba7a776cfe59706c24162a16f5fc7880930365fec3
+  - name: cloud-hypervisor-prepare-host
+    newName: ghcr.io/ironcore-dev/cloud-hypervisor-prepare-host
+    digest: sha256:4d7e927839c7851e63f0256e5641d5dc88ca6ff4703cf3143a4a672cf49b44a8
