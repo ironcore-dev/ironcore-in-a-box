@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: dp-service
-  namespace: dp-service-system
+  name: dpservice
+  namespace: dpservice-system
 spec:
   template:
     spec:
       # Delete the init container from the base
       initContainers:
-      - name: init-dp-service
+      - name: init-dpservice
         $patch: delete
       containers:
       - name: prometheus-agent
         $patch: delete
-      - name: dp-service
-        # Override the command and args for dp-service:
+      - name: dpservice
+        # Override the command and args for dpservice:
         command:
         - dpservice-bin
         args:

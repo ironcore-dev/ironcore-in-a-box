@@ -18,7 +18,7 @@ podman machine start ironcore-in-a-box
 # change the default system connection
 podman system connection default ironcore-in-a-box-root
 
-# the dp-service requires some extra kernel modules
+# the dpservice requires some extra kernel modules
 podman machine ssh ironcore-in-a-box "sudo rpm-ostree install kernel-modules-extra"
 
 # this kernel modules installation requires a restart of the VM

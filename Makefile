@@ -32,7 +32,7 @@ kind-cluster: kind ## Create a kind cluster
 	$(KIND) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml
 
 setup-network: metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
-	$(KUBECTL) rollout status daemonset/dp-service -n dp-service-system --timeout=360s && \
+	$(KUBECTL) rollout status daemonset/dpservice -n dpservice-system --timeout=360s && \
 	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-network.sh {}:/setup-network.sh && $(CRE) exec {} bash -c "bash /setup-network.sh"'
 
 delete: ## Delete the kind cluster
