@@ -73,6 +73,9 @@ metalnet: kubectl ## Install metalnet
 libvirt-provider: kubectl ## Install the libvirt-provider
 	$(KUBECTL) apply -k cluster/local/libvirt-provider
 
+cloud-hypervisor-provider: kubectl ## Install the cloud-hypervisor-provider
+	$(KUBECTL) apply -k cluster/local/cloud-hypervisor-provider
+
 ## Remove components
 down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalbond-client remove-metalnetlet remove-libvirt-provider unprepare ## Remove the ironcore stack
 

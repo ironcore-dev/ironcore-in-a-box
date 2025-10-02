@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: cloud-hypervisor-provider-system
+  name: cloud-hypervisor-provider-controller-manager
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: prepare-host
+          imagePullPolicy: IfNotPresent
+          args:
+            - --cloud-hypervisor-bin-path=/var/lib/cloud-hypervisor-provider
+            - --cloud-hypervisor-bin-sub-dir=v45.0
+            - --cloud-hypervisor-bin-url=https://github.com/cloud-hypervisor/cloud-hypervisor/releases/download/v45.0/cloud-hypervisor-static
+            - --cloud-hypervisor-firmware-path=/var/lib/cloud-hypervisor-provider
+            - --cloud-hypervisor-firmware-url=https://github.com/cloud-hypervisor/rust-hypervisor-firmware/releases/download/0.5.0/hypervisor-fw
+            - --cloud-hypervisor-firmware-sub-dir=0.5.0
+            - --download
+            - --zap-log-level=3
+      containers:
+        - name: manager
+          args:
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=127.0.0.1:8080
+            - --machine-pool-name=$(NODE_NAME)-ch
+            - --provider-id=cloud-hypervisor-provider://$(NODE_NAME)
+            - --machine-runtime-endpoint=unix:/var/run/cloud-hypervisor-provider.sock
+            - --machine-downward-api-label=root-machine-namespace=metadata.labels['downward-api.cloud-hypervisor-provider.ironcore.dev/root-machine-namespace']
+            - --machine-downward-api-label=root-machine-name=metadata.labels['downward-api.cloud-hypervisor-provider.ironcore.dev/root-machine-name']
+            - --machine-downward-api-label=root-machine-uid=metadata.labels['downward-api.cloud-hypervisor-provider.ironcore.dev/root-machine-uid']
+            - --dial-timeout=10s
+        - name: provider
+          imagePullPolicy: IfNotPresent
+          args:
+            - --address=/var/run/cloud-hypervisor-provider.sock
+            - --provider-root-dir=/var/lib/cloud-hypervisor-provider
+            - --zap-log-level=3
+            - --cloud-hypervisor-bin-path=/home/lukasfrank/cloud-hypervisor-provider/version/cloud-hypervisor
+            - --cloud-hypervisor-firmware-path=/home/lukasfrank/cloud-hypervisor-provider/version/firmware
+            - --detach-vms=false
+            - --machine-class=t3-small-experimental,2000,2147483648
+            - --network-interface-plugin-name=isolated
