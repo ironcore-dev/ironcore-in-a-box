@@ -11,6 +11,10 @@ GOOS    := $(shell go env GOOS)
 # Instead of using kindest/node:v1.32.0 we use our own image with the necessary tools installed
 KIND_IMAGE := ghcr.io/ironcore-dev/kind-node:latest
 
+# Configure the kind cluster name
+KIND_CLUSTER_NAME ?= ironcore-in-a-box
+export KIND_CLUSTER_NAME
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
