@@ -9,8 +9,10 @@ data:
       {
         "name": "t3-small",
         "capabilities": {
-          "cpu_millis": 2000,
-          "memory_bytes": 2147483648
+          "resources": {
+            "cpu": 2,
+            "memory": 2147483648
+          }
         }
       }
     ]
