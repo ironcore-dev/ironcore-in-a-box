@@ -7,3 +7,13 @@ metadata:
 capabilities:
   cpu: 2
   memory: 2Gi
+---
+apiVersion: compute.ironcore.dev/v1alpha1
+kind: MachineClass
+metadata:
+  labels:
+    environment: experimental
+  name: t3-small-experimental
+capabilities:
+  cpu: 2
+  memory: 2Gi
