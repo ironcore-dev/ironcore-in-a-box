@@ -116,6 +116,9 @@ dpservice: prepare-local-config guard-cluster kubectl ## Install dpservice
 metalnet: prepare-local-config guard-cluster kubectl ## Install metalnet
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/metalnet
 
+rook: prepare-local-config guard-cluster kubectl setup-storage ## Install rook
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/rook-operator
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/rook-cluster
 
 libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster kubectl ## Install the libvirt-provider
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/libvirt-provider
@@ -146,6 +149,10 @@ remove-dpservice: guard-cluster kubectl ## Remove dpservice
 
 remove-metalnet: guard-cluster kubectl ## Remove metalnet
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalnet --ignore-not-found=true
+
+remove-rook: guard-cluster kubectl cleanup-storage ## Remove rook
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/rook-cluster
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/rook-operator
 
 remove-libvirt-provider: guard-cluster kubectl ## Remove libvirt-provider
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/libvirt-provider --ignore-not-found=true
