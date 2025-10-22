@@ -1,0 +1,10 @@
+apiVersion: ceph.rook.io/v1
+kind: CephClient
+metadata:
+  name: ceph-volume-provider
+  namespace: rook-ceph
+spec:
+  caps:
+    mgr: profile rbd pool=ceph-volume-provider
+    mon: profile rbd
+    osd: profile rbd pool=ceph-volume-provider

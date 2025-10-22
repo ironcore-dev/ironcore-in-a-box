@@ -1,0 +1,10 @@
+apiVersion: storage.ironcore.dev/v1alpha1
+kind: VolumeClass
+metadata:
+  name: general-purpose
+  labels:
+    environment: production
+capabilities:
+  iops: 16000
+  tps: 250Mi
+resizePolicy: ExpandOnly
