@@ -1,0 +1,10 @@
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
+  name: builtin-mgr
+spec:
+  # Ceph requires the name of the pool to be .mgr
+  name: .mgr
+  replicated:
+    size: 1
+    requireSafeReplicaSize: false
