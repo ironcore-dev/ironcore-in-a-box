@@ -1,0 +1,9 @@
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
+  name: ceph-volume-provider
+  namespace: rook-ceph
+spec:
+  replicated:
+    size: 1
+    requireSafeReplicaSize: false

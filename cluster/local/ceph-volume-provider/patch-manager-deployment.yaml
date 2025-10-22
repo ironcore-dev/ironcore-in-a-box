@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ceph-volume-provider-system
+  name: ceph-volume-provider-controller-manager
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          args:
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=127.0.0.1:8080
+            - --leader-elect
+            - --volume-pool-name=ironcore-in-a-box
+            - --provider-id=ceph-provider://ironcore-in-a-box
+            - --volume-runtime-endpoint=unix:/var/run/iri-volume.sock
+            - --controllers=*
+            # - --rotate-certificates
+        - name: ceph-volume-provider
+          args:
+            - --address=/var/run/iri-volume.sock
+            - --ceph-keyring-file=/var/cfg/ceph/keyring
+            - --supported-volume-classes=/var/cfg/classes/supported-volume-classes.json
+            - --zap-log-level=2
+            - --ceph-user=admin
+            - --ceph-pool=ceph-volume-provider
+            - --ceph-client=client.ceph-volume-provider
+            # TODO: How to set the IP address of the monitor? headless service is not resolvable from libvirt
+            - --ceph-monitors=10.96.11.187:6789
+            - --ceph-kek-path=/var/cfg/kek/passphrase
+            - --limits-burst-duration=60
+            - --limits-burst-factor=20

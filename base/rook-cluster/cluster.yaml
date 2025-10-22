@@ -49,14 +49,3 @@ spec:
       bdev_flock_retry: "20"
       bluefs_buffered_io: "false"
       mon_data_avail_warn: "10"
----
-apiVersion: ceph.rook.io/v1
-kind: CephBlockPool
-metadata:
-  name: builtin-mgr
-  namespace: rook-ceph # namespace:cluster
-spec:
-  name: .mgr
-  replicated:
-    size: 1
-    requireSafeReplicaSize: false

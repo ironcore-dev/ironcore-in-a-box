@@ -120,6 +120,9 @@ rook: prepare-local-config guard-cluster kubectl setup-storage ## Install rook
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/rook-operator
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/rook-cluster
 
+ceph-volume-provider: prepare-local-config guard-cluster kubectl ## Install the ceph-volume-provider
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/ceph-volume-provider
+
 libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster kubectl ## Install the libvirt-provider
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/libvirt-provider
 
@@ -153,6 +156,9 @@ remove-metalnet: guard-cluster kubectl ## Remove metalnet
 remove-rook: guard-cluster kubectl cleanup-storage ## Remove rook
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/rook-cluster
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/rook-operator
+
+remove-ceph-volume-provider: guard-cluster kubectl ## Remove the ceph-volume-provider
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/ceph-volume-provider
 
 remove-libvirt-provider: guard-cluster kubectl ## Remove libvirt-provider
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/libvirt-provider --ignore-not-found=true

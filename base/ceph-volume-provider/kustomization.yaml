@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ceph-volume-provider-system
+
+resources:
+  - poollet-rbac
+  - github.com/ironcore-dev/ceph-provider/config/ceph-volume-provider/default?ref=7265285779705fd2cca7e181ec1766c8179bd6a3
+
+images:
+  - name: volumepoollet
+    newName: ghcr.io/ironcore-dev/ironcore-volumepoollet
+    newTag: sha-54f4284
+  - name: ceph-volume-provider
+    newName: ghcr.io/ironcore-dev/ceph-volume-provider
+    newTag: sha-7265285
+
+patches:
+  - path: patch-manager-deployment.yaml
+  - patch: |-
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ceph-volume-provider-system
+      $patch: delete
