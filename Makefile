@@ -39,6 +39,12 @@ setup-network: metalbond metalbond-client dpservice metalnet ## Customize the ne
 	$(KUBECTL) rollout status daemonset/dpservice -n dpservice-system --timeout=360s && \
 	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-network.sh {}:/setup-network.sh && $(CRE) exec {} bash -c "bash /setup-network.sh"'
 
+setup-storage:
+	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-storage.sh {}:/setup-storage.sh && $(CRE) exec {} bash -c "bash /setup-storage.sh"'
+
+cleanup-storage:
+	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/cleanup-storage.sh {}:/cleanup-storage.sh && $(CRE) exec {} bash -c "bash /cleanup-storage.sh"'
+
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
