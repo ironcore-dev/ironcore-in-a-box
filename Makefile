@@ -79,6 +79,10 @@ dpservice: kubectl ## Install dpservice
 metalnet: kubectl ## Install metalnet
 	$(KUBECTL) apply -k cluster/local/metalnet
 
+rook: kubectl setup-storage ## Install rook
+	$(KUBECTL) apply -k cluster/local/rook
+	$(KUBECTL) apply -k cluster/local/rook-cluster
+
 
 libvirt-provider: kubectl ## Install the libvirt-provider
 	$(KUBECTL) apply -k cluster/local/libvirt-provider
@@ -109,6 +113,10 @@ remove-dpservice: kubectl ## Remove dpservice
 
 remove-metalnet: kubectl ## Remove metalnet
 	$(KUBECTL) delete -k cluster/local/metalnet
+
+remove-rook: kubectl cleanup-storage ## Remove rook
+	$(KUBECTL) delete -k cluster/local/rook-cluster
+	$(KUBECTL) delete -k cluster/local/rook
 
 remove-libvirt-provider: kubectl ## Remove libvirt-provider
 	$(KUBECTL) delete -k cluster/local/libvirt-provider
