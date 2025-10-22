@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller-manager
+  namespace: system
+spec:
+  template:
+    spec:
+      # TODO: fix later when RBAC config is refactored in ceph-provider
+      serviceAccountName: ceph-volume-provider-controller-manager
+      containers:
+        - name: manager
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+        - name: ceph-volume-provider
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /var/cfg/classes
+              name: supported-volume-classes
+            - mountPath: /var/cfg/ceph/
+              name: ceph-keyring
+            - mountPath: /var/cfg/kek
+              name: ceph-kek
+      volumes:
+        - name: supported-volume-classes
+          configMap:
+              name: supported-volume-classes
+        - name: ceph-keyring
+          secret:
+            secretName: rook-ceph-admin-keyring
+        - name: ceph-kek
+          secret:
+            secretName: ceph-kek

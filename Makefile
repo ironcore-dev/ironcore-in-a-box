@@ -83,6 +83,11 @@ rook: kubectl setup-storage ## Install rook
 	$(KUBECTL) apply -k cluster/local/rook
 	$(KUBECTL) apply -k cluster/local/rook-cluster
 
+ceph-volume-provider: kubectl ## Install the ceph-volume-provider
+	$(KUBECTL) apply -k cluster/local/ceph-volume-provider
+
+volumepoollet-broker: kubectl ## Install the ceph-volume-provider
+	$(KUBECTL) apply -k cluster/local/volumepoollet-broker
 
 libvirt-provider: kubectl ## Install the libvirt-provider
 	$(KUBECTL) apply -k cluster/local/libvirt-provider
@@ -117,6 +122,12 @@ remove-metalnet: kubectl ## Remove metalnet
 remove-rook: kubectl cleanup-storage ## Remove rook
 	$(KUBECTL) delete -k cluster/local/rook-cluster
 	$(KUBECTL) delete -k cluster/local/rook
+
+remove-ceph-volume-provider: kubectl ## Remove the ceph-volume-provider
+	$(KUBECTL) delete -k cluster/local/ceph-volume-provider
+
+remove-volumepoollet-broker: kubectl ## Remove the volumepoollet-broker
+	$(KUBECTL) delete -k cluster/local/volumepoollet-broker
 
 remove-libvirt-provider: kubectl ## Remove libvirt-provider
 	$(KUBECTL) delete -k cluster/local/libvirt-provider
