@@ -9,10 +9,10 @@ resources:
 images:
   - name: machinepoollet
     newName: ghcr.io/ironcore-dev/ironcore-machinepoollet
-    newTag: sha-1ac7ce6
+    newTag: sha-c6a8ace
   - name: libvirt-provider
     newName: ghcr.io/ironcore-dev/libvirt-provider
-    newTag: sha-b1b2ef4
+    newTag: sha-197ac25
 
 patches:
   - path: patch-manager-daemonset.yaml
