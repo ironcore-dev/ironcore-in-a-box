@@ -39,6 +39,12 @@ setup-network: metalbond metalbond-client dpservice metalnet ## Customize the ne
 	$(KUBECTL) rollout status daemonset/dpservice -n dpservice-system --timeout=360s && \
 	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-network.sh {}:/setup-network.sh && $(CRE) exec {} bash -c "bash /setup-network.sh"'
 
+setup-storage:
+	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-storage.sh {}:/setup-storage.sh && $(CRE) exec {} bash -c "bash /setup-storage.sh"'
+
+cleanup-storage:
+	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/cleanup-storage.sh {}:/cleanup-storage.sh && $(CRE) exec {} bash -c "bash /cleanup-storage.sh"'
+
 delete: ## Delete the kind cluster
 	$(KIND) delete cluster
 
@@ -73,6 +79,15 @@ dpservice: kubectl ## Install dpservice
 metalnet: kubectl ## Install metalnet
 	$(KUBECTL) apply -k cluster/local/metalnet
 
+rook: kubectl setup-storage ## Install rook
+	$(KUBECTL) apply -k cluster/local/rook
+	$(KUBECTL) apply -k cluster/local/rook-cluster
+
+ceph-volume-provider: kubectl ## Install the ceph-volume-provider
+	$(KUBECTL) apply -k cluster/local/ceph-volume-provider
+
+volumepoollet-broker: kubectl ## Install the ceph-volume-provider
+	$(KUBECTL) apply -k cluster/local/volumepoollet-broker
 
 libvirt-provider: kubectl ## Install the libvirt-provider
 	$(KUBECTL) apply -k cluster/local/libvirt-provider
@@ -103,6 +118,16 @@ remove-dpservice: kubectl ## Remove dpservice
 
 remove-metalnet: kubectl ## Remove metalnet
 	$(KUBECTL) delete -k cluster/local/metalnet
+
+remove-rook: kubectl cleanup-storage ## Remove rook
+	$(KUBECTL) delete -k cluster/local/rook-cluster
+	$(KUBECTL) delete -k cluster/local/rook
+
+remove-ceph-volume-provider: kubectl ## Remove the ceph-volume-provider
+	$(KUBECTL) delete -k cluster/local/ceph-volume-provider
+
+remove-volumepoollet-broker: kubectl ## Remove the volumepoollet-broker
+	$(KUBECTL) delete -k cluster/local/volumepoollet-broker
 
 remove-libvirt-provider: kubectl ## Remove libvirt-provider
 	$(KUBECTL) delete -k cluster/local/libvirt-provider

@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - git@github.com/ironcore-dev/ironcore/config/volumepoollet-broker/default?ref=07323fc92ea6da00acc0b9ef1c0b5502ff591b6b
+
+images:
+  - name: volumepoollet
+    newName: ghcr.io/ironcore-dev/ironcore-volumepoollet
+    digest: sha256:1b4a354edaca8426cab1c50ecbe545fe47322de43135a3ae07638c577cb72fdb
+  - name: volumebroker
+    newName: ghcr.io/ironcore-dev/ironcore-volumebroker
+    digest: sha256:c67095cfe874ea9e569c5a7ecafd05d46d9602de2a6f8d5ebd35a598e179a18f
+    #digest: sha256:fa56521ccbca4e15335648221a323dda96496e683ac347f85742f7c398dae533

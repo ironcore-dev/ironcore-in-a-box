@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namePrefix: ceph-volume-provider-
+
+resources:
+  # TODO: remove once RBAC in ceph provider is cleaned up
+  - leader_election_role.yaml
+  - leader_election_role_binding.yaml
+  - github.com/ironcore-dev/ironcore/config/volumepoollet-broker/poollet-rbac?ref=v0.2.0
