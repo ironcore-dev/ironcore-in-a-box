@@ -148,7 +148,7 @@ $(KIND): $(LOCALBIN)
 .PHONY: kubectl
 kubectl: $(KUBECTL) ## Download kubectl locally if necessary.
 $(KUBECTL): $(LOCALBIN)
-	@if ! $(KUBECTL) version &>/dev/null; then \
+	@if ! $(KUBECTL) &>/dev/null; then \
 		echo "$(KUBECTL) is not installed. Installing kubectl..."; \
 		curl --retry $(CURL_RETRIES) -fsL https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl -o $(KUBECTL); \
 		ln -sf "$(KUBECTL)" "$(KUBECTL_BIN)"; \
