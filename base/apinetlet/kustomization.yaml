@@ -2,12 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - github.com/ironcore-dev/ironcore-net/config/apinetlet/kind?ref=8b8df64c2d4fc0e5e65b8f4ffb54cead7125612f
+  - github.com/ironcore-dev/ironcore-net/config/apinetlet/kind?ref=324c97f7fc8f982295506c5ea8122d70149e468e
 
 images:
   - name: apinetlet
     newName: ghcr.io/ironcore-dev/ironcore-net/apinetlet
-    digest: sha256:a5c32c6a702bd67a1963a8fc96655978c98e99f7e247a2480c2c38886225e7ed
+    newTag: sha-324c97f
 
 patches:
   - path: patch-deployment.yaml

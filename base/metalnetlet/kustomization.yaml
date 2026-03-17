@@ -2,12 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - github.com/ironcore-dev/ironcore-net/config/metalnetlet/kind?ref=8b8df64c2d4fc0e5e65b8f4ffb54cead7125612f
+  - github.com/ironcore-dev/ironcore-net/config/metalnetlet/kind?ref=324c97f7fc8f982295506c5ea8122d70149e468e
 
 images:
   - name: metalnetlet
     newName: ghcr.io/ironcore-dev/ironcore-net/metalnetlet
-    digest: sha256:b0330dc3ade827cfd7a97eb8d91c93745d2327e5315798e2698b95c11b6d998e
+    newTag: sha-324c97f
 
 patches:
   - path: patch-deployment.yaml

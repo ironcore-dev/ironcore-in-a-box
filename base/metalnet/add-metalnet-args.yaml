@@ -1,27 +1,18 @@
 - op: add
-  path: /spec/template/spec/containers/1/args/-
+  path: /spec/template/spec/containers/0/args/-
   value: "--tapdevice-mod"
 - op: replace
   path: /spec/template/spec/containers/0/args/0
-  value: --secure-listen-address=0.0.0.0:28443
-- op: replace
-  path: /spec/template/spec/containers/0/args/1
-  value: --upstream=http://127.0.0.1:28080/
-- op: replace
-  path: /spec/template/spec/containers/0/ports/0/containerPort
-  value: 28443
-- op: replace
-  path: /spec/template/spec/containers/1/args/0
   value: --health-probe-bind-address=:28081
 - op: replace
-  path: /spec/template/spec/containers/1/args/1
+  path: /spec/template/spec/containers/0/args/1
   value: --metrics-bind-address=127.0.0.1:28080
 - op: replace
-  path: /spec/template/spec/containers/1/livenessProbe/httpGet/port
+  path: /spec/template/spec/containers/0/livenessProbe/httpGet/port
   value: 28081
 - op: add
-  path: /spec/template/spec/containers/1/args/-
+  path: /spec/template/spec/containers/0/args/-
   value: --metalbond-peer=[::1]:4711
 - op: add
-  path: /spec/template/spec/containers/1/args/-
+  path: /spec/template/spec/containers/0/args/-
   value: --router-address=2001:db8:dead:beef::1
