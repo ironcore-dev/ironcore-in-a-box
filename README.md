@@ -72,6 +72,31 @@ You can find examples of how to use the IronCore API in the [Examples](examples/
 
 Your local "datacenter" is at your fingertips to test. Ironcore API documentation can be found [here](https://ironcore-dev.github.io/ironcore/api-reference/overview/) which shows the whole capabilities of IronCore.
 
+## Tests
+
+This project uses [BATS](https://bats-core.readthedocs.io/en/stable/index.html) for testing. It comes bundled with the repository in the form of git submodules and does not need to be externally installed. There are however some additional dependencies needed for tests:
+
+* sshpass
+* (Optional) shellcheck - Only if you want to lint tests
+
+### Running tests
+
+To execute tests, simply run
+
+```bash
+make test
+```
+
+Tests will reuse existing `ironcore-in-a-box` kind cluster if it already exists or bootstrap a new cluster if it does not. Note that tests may perform desctructive actions on the cluster.
+
+### Linting tests
+
+Tests are written in bash. If you are developing tests, it's recommended to run them through linter before submitting a pull request.
+
+```
+make lint-tests
+```
+
 ## Cleanup
 
 To remove the kind cluster and all deployed resources, run:
