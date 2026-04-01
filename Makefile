@@ -124,6 +124,7 @@ CURL_RETRIES=3
 KUBECTL ?= $(LOCALBIN)/kubectl-$(KUBECTL_VERSION)
 KUBECTL_BIN ?= $(LOCALBIN)/kubectl
 KIND ?= $(LOCALBIN)/kind-$(KIND_VERSION)
+KIND_BIN ?= $(LOCALBIN)/kind
 CMCTL ?= $(LOCALBIN)/cmctl-$(CMCTL_VERSION)
 CRE ?= $(shell if cre=$$(command -v docker); then echo $$cre; elif cre=$$(command -v podman); then echo $$cre; fi)
 ifeq ($(CRE),)
@@ -143,7 +144,8 @@ $(CMCTL): $(LOCALBIN)
 .PHONY: kind
 kind: $(KIND) ## Download kind locally if necessary.
 $(KIND): $(LOCALBIN)
-	$(call go-install-tool,$(KIND),sigs.k8s.io/kind,$(KIND_VERSION))
+	$(call go-install-tool,$(KIND),sigs.k8s.io/kind,$(KIND_VERSION)); \
+	ln -sf "$(KIND)" "$(KIND_BIN)"
 
 .PHONY: kubectl
 kubectl: $(KUBECTL) ## Download kubectl locally if necessary.
