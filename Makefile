@@ -15,6 +15,13 @@ KIND_IMAGE := ghcr.io/ironcore-dev/kind-node:latest
 KIND_CLUSTER_NAME ?= ironcore-in-a-box
 export KIND_CLUSTER_NAME
 
+# Expected kubectl context for the kind cluster
+KIND_CONTEXT := kind-$(KIND_CLUSTER_NAME)
+
+# Command wrappers pre-configured to target the kind cluster
+KIND_CTX = $(KIND) --name $(KIND_CLUSTER_NAME)
+KUBECTL_CTX = $(KUBECTL) --context $(KIND_CONTEXT)
+
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -32,83 +39,97 @@ export KIND_CLUSTER_NAME
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-kind-cluster: kind ## Create a kind cluster
-	$(KIND) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml
+.PHONY: guard-cluster
+guard-cluster: ## Verify the target kind cluster exists and kubectl context is correct
+	@if ! $(KIND) get clusters 2>/dev/null | grep -qx '$(KIND_CLUSTER_NAME)'; then \
+		echo "ERROR: kind cluster '$(KIND_CLUSTER_NAME)' does not exist."; \
+		echo "       Run 'make kind-cluster' to create it first."; \
+		exit 1; \
+	fi
+	@CURRENT_CTX=$$($(KUBECTL) config current-context 2>/dev/null); \
+	if [ "$$CURRENT_CTX" != "$(KIND_CONTEXT)" ]; then \
+		echo "ERROR: Current kubectl context is '$$CURRENT_CTX', expected '$(KIND_CONTEXT)'."; \
+		echo "       Run: kubectl config use-context $(KIND_CONTEXT)"; \
+		exit 1; \
+	fi
 
-setup-network: metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
-	$(KUBECTL) rollout status daemonset/dpservice -n dpservice-system --timeout=360s && \
-	$(KIND) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-network.sh {}:/setup-network.sh && $(CRE) exec {} bash -c "bash /setup-network.sh"'
+kind-cluster: kind ## Create a kind cluster
+	$(KIND_CTX) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml
+
+setup-network: guard-cluster metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
+	$(KUBECTL_CTX) rollout status daemonset/dpservice -n dpservice-system --timeout=360s && \
+	$(KIND_CTX) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-network.sh {}:/setup-network.sh && $(CRE) exec {} bash -c "bash /setup-network.sh"'
 
 delete: ## Delete the kind cluster
-	$(KIND) delete cluster
+	$(KIND_CTX) delete cluster
 
 ## Install components
 up: prepare ironcore ironcore-net apinetlet setup-network metalnetlet libvirt-provider ## Bring up the ironcore stack
 
 prepare: kubectl cmctl kind-cluster ## Prepare the environment
-	$(KUBECTL) apply -k cluster/local/prepare
+	$(KUBECTL_CTX) apply -k cluster/local/prepare
 	$(CMCTL) check api --wait 120s
 
 ironcore: prepare kubectl ## Install the ironcore
-	$(KUBECTL) apply -k cluster/local/ironcore
+	$(KUBECTL_CTX) apply -k cluster/local/ironcore
 
-ironcore-net: kubectl ## Install the ironcore-net
-	$(KUBECTL) apply -k cluster/local/ironcore-net
+ironcore-net: guard-cluster kubectl ## Install the ironcore-net
+	$(KUBECTL_CTX) apply -k cluster/local/ironcore-net
 
-apinetlet: kubectl ## Install the apinetlet
-	$(KUBECTL) apply -k cluster/local/apinetlet
+apinetlet: guard-cluster kubectl ## Install the apinetlet
+	$(KUBECTL_CTX) apply -k cluster/local/apinetlet
 
-metalnetlet: kubectl ## Install the metalnetlet
-	$(KUBECTL) apply -k cluster/local/metalnetlet
+metalnetlet: guard-cluster kubectl ## Install the metalnetlet
+	$(KUBECTL_CTX) apply -k cluster/local/metalnetlet
 
-metalbond: kubectl ## Install metalbond
-	$(KUBECTL) apply -k cluster/local/metalbond
+metalbond: guard-cluster kubectl ## Install metalbond
+	$(KUBECTL_CTX) apply -k cluster/local/metalbond
 
-metalbond-client: kubectl ## Install metalbond-client
-	$(KUBECTL) apply -k cluster/local/metalbond-client
+metalbond-client: guard-cluster kubectl ## Install metalbond-client
+	$(KUBECTL_CTX) apply -k cluster/local/metalbond-client
 
-dpservice: kubectl ## Install dpservice
-	$(KUBECTL) apply -k cluster/local/dpservice
+dpservice: guard-cluster kubectl ## Install dpservice
+	$(KUBECTL_CTX) apply -k cluster/local/dpservice
 
-metalnet: kubectl ## Install metalnet
-	$(KUBECTL) apply -k cluster/local/metalnet
+metalnet: guard-cluster kubectl ## Install metalnet
+	$(KUBECTL_CTX) apply -k cluster/local/metalnet
 
 
-libvirt-provider: kubectl ## Install the libvirt-provider
-	$(KUBECTL) apply -k cluster/local/libvirt-provider
+libvirt-provider: guard-cluster kubectl ## Install the libvirt-provider
+	$(KUBECTL_CTX) apply -k cluster/local/libvirt-provider
 
 ## Remove components
 down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalbond-client remove-metalnetlet remove-libvirt-provider unprepare ## Remove the ironcore stack
 
-remove-ironcore: kubectl ## Remove the ironcore
-	$(KUBECTL) delete -k cluster/local/ironcore
+remove-ironcore: guard-cluster kubectl ## Remove the ironcore
+	$(KUBECTL_CTX) delete -k cluster/local/ironcore
 
-remove-ironcore-net: kubectl ## Remove the ironcore
-	$(KUBECTL) delete -k cluster/local/ironcore-net
+remove-ironcore-net: guard-cluster kubectl ## Remove the ironcore
+	$(KUBECTL_CTX) delete -k cluster/local/ironcore-net
 
-remove-apinetlet: kubectl ## Remove the apinetlet
-	$(KUBECTL) delete -k cluster/local/apinetlet
+remove-apinetlet: guard-cluster kubectl ## Remove the apinetlet
+	$(KUBECTL_CTX) delete -k cluster/local/apinetlet
 
-remove-metalnetlet: kubectl ## Remove the metalnetlet
-	$(KUBECTL) delete -k cluster/local/metalnetlet
+remove-metalnetlet: guard-cluster kubectl ## Remove the metalnetlet
+	$(KUBECTL_CTX) delete -k cluster/local/metalnetlet
 
-remove-metalbond: kubectl ## Remove metalbond
-	$(KUBECTL) delete -k cluster/local/metalbond
+remove-metalbond: guard-cluster kubectl ## Remove metalbond
+	$(KUBECTL_CTX) delete -k cluster/local/metalbond
 
-remove-metalbond-client: kubectl ## Remove metalbond
-	$(KUBECTL) delete -k cluster/local/metalbond-client
+remove-metalbond-client: guard-cluster kubectl ## Remove metalbond
+	$(KUBECTL_CTX) delete -k cluster/local/metalbond-client
 
-remove-dpservice: kubectl ## Remove dpservice
-	$(KUBECTL) delete -k cluster/local/dpservice
+remove-dpservice: guard-cluster kubectl ## Remove dpservice
+	$(KUBECTL_CTX) delete -k cluster/local/dpservice
 
-remove-metalnet: kubectl ## Remove metalnet
-	$(KUBECTL) delete -k cluster/local/metalnet
+remove-metalnet: guard-cluster kubectl ## Remove metalnet
+	$(KUBECTL_CTX) delete -k cluster/local/metalnet
 
-remove-libvirt-provider: kubectl ## Remove libvirt-provider
-	$(KUBECTL) delete -k cluster/local/libvirt-provider
+remove-libvirt-provider: guard-cluster kubectl ## Remove libvirt-provider
+	$(KUBECTL_CTX) delete -k cluster/local/libvirt-provider
 
-unprepare: kubectl ## Unprepare the environment
-	$(KUBECTL) delete -k cluster/local/prepare
+unprepare: guard-cluster kubectl ## Unprepare the environment
+	$(KUBECTL_CTX) delete -k cluster/local/prepare
 
 ##@ Dependencies
 
