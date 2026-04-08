@@ -27,9 +27,9 @@ check_example_machine_ssh() {
 # 11 minutes.
 deploy_ironcore() {
     local output
-    output=$(kind get clusters)
-    if [ "$output" == "ironcore-in-a-box" ]; then
-        log warn "Re-using existing ironcore-in-a-box cluster"
+    output=$($KIND get clusters)
+    if [ "$output" == "$KIND_CLUSTER_NAME" ]; then
+        log warn "Re-using existing $KIND_CLUSTER_NAME cluster"
     else
         log info "Running 'make up' to spin up ironcore-in-a-box cluster. This may take a while..."
         make up

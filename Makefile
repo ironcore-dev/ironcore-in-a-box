@@ -195,6 +195,8 @@ test: check-submodules $(KIND) $(KUBECTL)
 	@export PATH=$(LOCALBIN):$(PATH); \
 	export BATS_SOURCES=$(LOCALBATS); \
 	export EXAMPLES=$(LOCALDIR)/examples; \
+	export KUBECTL_CTX="$(KUBECTL_CTX)"; \
+	export KIND="$(KIND)"; \
 	$(BATS) --tap tests/
 
 .PHONY: lint-tests

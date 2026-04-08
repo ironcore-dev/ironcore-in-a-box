@@ -20,17 +20,17 @@ teardown() {
     # Test-specific teardowns
     if [ "$BATS_TEST_DESCRIPTION" == "Deploy VM" ]; then
         log info "Tearing down $BATS_TEST_DESCRIPTION"
-        kubectl delete -f "$EXAMPLES/network/examples/network.yaml"
-        kubectl delete -f "$EXAMPLES/network/examples/networkinterface.yaml"
-        kubectl delete -f "$EXAMPLES/machine/machine.yaml"
+        $KUBECTL_CTX delete -f "$EXAMPLES/network/examples/network.yaml"
+        $KUBECTL_CTX delete -f "$EXAMPLES/network/examples/networkinterface.yaml"
+        $KUBECTL_CTX delete -f "$EXAMPLES/machine/machine.yaml"
     fi
 
 }
 
 @test "Deploy VM" {
-    kubectl apply -f "$EXAMPLES/network/examples/network.yaml"
-    kubectl apply -f "$EXAMPLES/network/examples/networkinterface.yaml"
-    kubectl apply -f "$EXAMPLES/machine/machine.yaml"
+    $KUBECTL_CTX apply -f "$EXAMPLES/network/examples/network.yaml"
+    $KUBECTL_CTX apply -f "$EXAMPLES/network/examples/networkinterface.yaml"
+    $KUBECTL_CTX apply -f "$EXAMPLES/machine/machine.yaml"
 
     wait_for 600 machines_ready
 

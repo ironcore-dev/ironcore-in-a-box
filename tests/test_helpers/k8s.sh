@@ -32,7 +32,7 @@ get_virtual_ip() {
     fi
     local name=$1; shift
     local ip
-    ip=$(kubectl get virtualip "$name" --no-headers -o custom-columns="EXTERNALIP:.status.ip")
+    ip=$($KUBECTL_CTX get virtualip "$name" --no-headers -o custom-columns="EXTERNALIP:.status.ip")
     local result=$?
     if [ "$ip" == "<none>" ]; then
         log err "Failed to find VirtualIP $name"
@@ -58,7 +58,7 @@ _assert_k8s_resource_state() {
     local column=$1; shift
 
     local output
-    if ! output=$(kubectl get "$resource" -A --no-headers 2>&1); then
+    if ! output=$($KUBECTL_CTX get "$resource" -A --no-headers 2>&1); then
         log err "kubectl failed with: $output"
         return 1
     fi
