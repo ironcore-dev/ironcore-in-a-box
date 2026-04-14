@@ -53,6 +53,10 @@ guard-cluster: ## Verify the target kind cluster exists and kubectl context is c
 		exit 1; \
 	fi
 
+.PHONY: render-public-vip-overlays
+render-public-vip-overlays: guard-cluster ## Render runtime kustomize overlays from detected public VIP config
+	@hack/render-public-vip-overlays.sh "$(CRE)" "$(KIND_CLUSTER_NAME)" "$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)"
+
 kind-cluster: kind ## Create a kind cluster
 	$(KIND_CTX) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml
 
@@ -73,8 +77,8 @@ prepare: kubectl cmctl kind-cluster ## Prepare the environment
 ironcore: prepare kubectl ## Install the ironcore
 	$(KUBECTL_CTX) apply -k cluster/local/ironcore
 
-ironcore-net: guard-cluster kubectl ## Install the ironcore-net
-	$(KUBECTL_CTX) apply -k cluster/local/ironcore-net
+ironcore-net: render-public-vip-overlays guard-cluster kubectl ## Install the ironcore-net
+	$(KUBECTL_CTX) apply -k "$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net"
 
 apinetlet: guard-cluster kubectl ## Install the apinetlet
 	$(KUBECTL_CTX) apply -k cluster/local/apinetlet
@@ -85,8 +89,8 @@ metalnetlet: guard-cluster kubectl ## Install the metalnetlet
 metalbond: guard-cluster kubectl ## Install metalbond
 	$(KUBECTL_CTX) apply -k cluster/local/metalbond
 
-metalbond-client: guard-cluster kubectl ## Install metalbond-client
-	$(KUBECTL_CTX) apply -k cluster/local/metalbond-client
+metalbond-client: render-public-vip-overlays guard-cluster kubectl ## Install metalbond-client
+	$(KUBECTL_CTX) apply -k "$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/metalbond-client"
 
 dpservice: guard-cluster kubectl ## Install dpservice
 	$(KUBECTL_CTX) apply -k cluster/local/dpservice
@@ -137,6 +141,7 @@ unprepare: guard-cluster kubectl ## Unprepare the environment
 LOCALDIR ?= $(shell pwd)
 LOCALBIN ?= $(LOCALDIR)/bin
 LOCALBATS ?= $(LOCALDIR)/.bats
+PUBLIC_VIP_RUNTIME_OVERLAYS_DIR ?= $(LOCALDIR)/.tmp/runtime-overlays
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
