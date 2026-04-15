@@ -21,15 +21,28 @@ teardown() {
     if [ "$BATS_TEST_DESCRIPTION" == "Deploy VM" ]; then
         log info "Tearing down $BATS_TEST_DESCRIPTION"
         $KUBECTL_CTX delete -f "$EXAMPLES/network/examples/network.yaml"
-        $KUBECTL_CTX delete -f "$EXAMPLES/network/examples/networkinterface.yaml"
+        networkinterface_example delete
         $KUBECTL_CTX delete -f "$EXAMPLES/machine/machine.yaml"
     fi
 
 }
 
+networkinterface_example() {
+    local action=$1; shift
+    if [ "$action" != "apply" ] && [ "$action" != "delete" ]; then
+        log err "Invalid action for networkinterface_example: '$action'. Expected apply|delete."
+        return 1
+    fi
+    local runtime="docker"
+    command -v docker &>/dev/null || runtime="podman"
+    local vip
+    vip=$(hack/detect-public-vip-config.sh "$runtime" "$KIND_CLUSTER_NAME" | awk -F= '$1 == "PUBLIC_VIP_IPV4" {print $2}')
+    sed -E "s#^([[:space:]]*virtualIP:).*#\\1 $vip#g" "$EXAMPLES/network/examples/networkinterface.yaml" | $KUBECTL_CTX "$action" -f -
+}
+
 @test "Deploy VM" {
     $KUBECTL_CTX apply -f "$EXAMPLES/network/examples/network.yaml"
-    $KUBECTL_CTX apply -f "$EXAMPLES/network/examples/networkinterface.yaml"
+    networkinterface_example apply
     $KUBECTL_CTX apply -f "$EXAMPLES/machine/machine.yaml"
 
     wait_for 600 machines_ready
