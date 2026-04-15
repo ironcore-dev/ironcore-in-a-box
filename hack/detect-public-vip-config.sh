@@ -19,8 +19,13 @@ runtime_bin=$1; shift
 kind_cluster_name=${1:-ironcore-in-a-box}
 kind_control_plane="${kind_cluster_name}-control-plane"
 
-network_name=$("$runtime_bin" inspect "$kind_control_plane" \
-    --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' 2>/dev/null | head -n1 || true)
+network_names=$("$runtime_bin" inspect "$kind_control_plane" \
+    --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' 2>/dev/null || true)
+
+network_name=$(printf '%s\n' "$network_names" | awk '$0 == "kind" { print; exit }')
+if [ -z "$network_name" ]; then
+    network_name=$(printf '%s\n' "$network_names" | awk 'NF { print; exit }')
+fi
 
 if [ -z "$network_name" ]; then
     fail "failed to detect container network for $kind_control_plane"
