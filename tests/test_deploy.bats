@@ -21,16 +21,16 @@ teardown() {
     if [ "$BATS_TEST_DESCRIPTION" == "Deploy VM" ]; then
         log info "Tearing down $BATS_TEST_DESCRIPTION"
         $KUBECTL_CTX delete -f "$EXAMPLES/network/examples/network.yaml"
-        apply_networkinterface_example delete
+        networkinterface_example delete
         $KUBECTL_CTX delete -f "$EXAMPLES/machine/machine.yaml"
     fi
 
 }
 
-apply_networkinterface_example() {
+networkinterface_example() {
     local action=$1; shift
     if [ "$action" != "apply" ] && [ "$action" != "delete" ]; then
-        log err "Invalid action for apply_networkinterface_example: '$action'. Expected apply|delete."
+        log err "Invalid action for networkinterface_example: '$action'. Expected apply|delete."
         return 1
     fi
     local runtime="docker"
@@ -42,7 +42,7 @@ apply_networkinterface_example() {
 
 @test "Deploy VM" {
     $KUBECTL_CTX apply -f "$EXAMPLES/network/examples/network.yaml"
-    apply_networkinterface_example apply
+    networkinterface_example apply
     $KUBECTL_CTX apply -f "$EXAMPLES/machine/machine.yaml"
 
     wait_for 600 machines_ready

@@ -49,6 +49,11 @@ sed -E "s#--public-prefix=[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+#--public-pref
     "$repo_root/base/ironcore-net/patch-apiserver-deployment.yaml" \
     > "$ironcore_net_overlay/public-prefix-patch.yaml"
 
+if ! grep -Fq -- "--public-prefix=$public_prefix_ipv4" "$ironcore_net_overlay/public-prefix-patch.yaml"; then
+    echo "failed to patch public prefix in ironcore-net overlay" >&2
+    exit 1
+fi
+
 cat > "$metalbond_client_overlay/kustomization.yaml" <<EOF
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
