@@ -3,6 +3,7 @@
 set -e
 
 BASEDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+REPOROOT="$BASEDIR/.."
 export TERM="xterm-256color"
 
 bold="$(tput bold)"
@@ -12,7 +13,7 @@ normal="$(tput sgr0)"
 
 for kustomization in "$BASEDIR"/../base/**/kustomization.yaml; do
   path="$(dirname "$kustomization")"
-  dir="$(realpath --relative-to "$BASEDIR"/.. "$path")"
+  dir="${path#"$REPOROOT"/}"
   echo "${bold}Validating $dir${normal}"
   if ! kustomize_output="$(kustomize build "$path" 2>&1)"; then
     echo "${red}Kustomize build $dir failed:"
@@ -24,7 +25,7 @@ done
 
 for kustomization in "$BASEDIR"/../cluster/local/**/kustomization.yaml; do
   path="$(dirname "$kustomization")"
-  dir="$(realpath --relative-to "$BASEDIR"/.. "$path")"
+  dir="${path#"$REPOROOT"/}"
   echo "${bold}Validating $dir${normal}"
   if ! kustomize_output="$(kustomize build "$path" 2>&1)"; then
     echo "${red}Kustomize build $dir failed:"
