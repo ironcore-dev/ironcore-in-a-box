@@ -4,6 +4,7 @@
 setup() {
     load "$BATS_SOURCES/bats-support/load.bash"
     load "$BATS_SOURCES/bats-assert/load.bash"
+    load "test_helpers/common.sh"
 
     TMPDIR=$(mktemp -d)
     CRE_MOCK="$TMPDIR/cre-mock.sh"
@@ -12,43 +13,6 @@ setup() {
 
 teardown() {
     rm -rf "$TMPDIR"
-}
-
-create_cre_mock() {
-    local subnet=$1; shift
-    local emit_network=${1:-yes}; shift || true
-
-    cat > "$CRE_MOCK" <<EOF
-#!/usr/bin/env bash
-set -euo pipefail
-
-if [ "\$1" = "inspect" ] && [ "\$2" = "ironcore-in-a-box-control-plane" ]; then
-EOF
-    if [ "$emit_network" = "yes" ]; then
-        cat >> "$CRE_MOCK" <<'EOF'
-    echo "kind"
-EOF
-    fi
-    cat >> "$CRE_MOCK" <<'EOF'
-    exit 0
-fi
-
-if [ "$1" = "network" ] && [ "$2" = "inspect" ] && [ "$3" = "kind" ]; then
-EOF
-    if [ -n "$subnet" ]; then
-        cat >> "$CRE_MOCK" <<EOF
-    echo "$subnet"
-EOF
-    fi
-    cat >> "$CRE_MOCK" <<'EOF'
-    exit 0
-fi
-
-echo "unexpected args: $*" >&2
-exit 1
-EOF
-
-    chmod +x "$CRE_MOCK"
 }
 
 @test "renders runtime overlays using detected public VIP config" {
@@ -85,12 +49,12 @@ EOF
 }
 
 @test "fails when public VIP config cannot be detected" {
-    create_cre_mock "" "no"
+    create_cre_mock ""
 
     run hack/render-public-vip-overlays.sh "$CRE_MOCK" "ironcore-in-a-box" "$RUNTIME_OVERLAYS_DIR"
 
     assert_failure
-    assert_line --partial "failed to detect container network"
+    assert_line --partial "failed to detect IPv4 subnet"
 }
 
 @test "fails when ironcore-net patch template has no public-prefix argument" {

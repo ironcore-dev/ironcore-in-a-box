@@ -128,3 +128,43 @@ succeed_for() {
     log err "Command wasn't stable for required amount of attempts ($duration): '$*'"
     return 1
 }
+
+# create_cre_mock SUBNET
+#
+# Generate a mock container-runtime executable at $CRE_MOCK that implements the
+# "network inspect kind" command used by hack/detect-public-vip-config.sh.
+#
+# The caller must set the CRE_MOCK variable to the desired output path before
+# invoking this function.
+#
+# Example:
+#   CRE_MOCK="$TMPDIR/cre-mock.sh"
+#   create_cre_mock "172.19.0.0/16"
+#   run hack/detect-public-vip-config.sh "$CRE_MOCK"
+#   assert_line "PUBLIC_CIDR_IPV4=172.19.1.0/24"
+#
+# Pass an empty SUBNET to simulate a failure (no IPv4 subnet found).
+create_cre_mock() {
+    local subnet=$1; shift
+
+    cat > "$CRE_MOCK" <<'HEADER'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$1" = "network" ] && [ "$2" = "inspect" ] && [ "$3" = "kind" ]; then
+HEADER
+    if [ -n "$subnet" ]; then
+        cat >> "$CRE_MOCK" <<EOF
+    echo "$subnet"
+EOF
+    fi
+    cat >> "$CRE_MOCK" <<'FOOTER'
+    exit 0
+fi
+
+echo "unexpected args: $*" >&2
+exit 1
+FOOTER
+
+    chmod +x "$CRE_MOCK"
+}
