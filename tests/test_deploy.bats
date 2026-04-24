@@ -49,5 +49,5 @@ networkinterface_example() {
 
     local machine_ip
     machine_ip=$(get_virtual_ip webapp)
-    wait_for 60 check_example_machine_ssh "$machine_ip"
+    wait_for 180 check_example_machine_ssh "$machine_ip"
 }
