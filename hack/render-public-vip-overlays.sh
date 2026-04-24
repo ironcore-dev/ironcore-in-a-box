@@ -38,6 +38,11 @@ runtime_bin=$1; shift
 kind_cluster_name=$1; shift
 runtime_overlays_dir=$1; shift
 
+if [ "$(basename "$runtime_bin")" = "podman" ]; then
+    echo "Skipping public VIP overlay rendering: not supported with podman (using static base configs)."
+    exit 0
+fi
+
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 public_vip_config=$("$repo_root/hack/detect-public-vip-config.sh" "$runtime_bin" "$kind_cluster_name")
 public_prefix_ipv4=$(awk -F= '$1 == "PUBLIC_PREFIX_IPV4" {print $2}' <<<"$public_vip_config")
