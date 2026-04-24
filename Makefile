@@ -78,7 +78,7 @@ ironcore: prepare kubectl ## Install the ironcore
 	$(KUBECTL_CTX) apply -k cluster/local/ironcore
 
 ironcore-net: render-public-vip-overlays guard-cluster kubectl ## Install the ironcore-net
-	$(KUBECTL_CTX) apply -k "$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net"
+	$(KUBECTL_CTX) apply -k $(if $(wildcard $(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net),"$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net",cluster/local/ironcore-net)
 
 apinetlet: guard-cluster kubectl ## Install the apinetlet
 	$(KUBECTL_CTX) apply -k cluster/local/apinetlet
@@ -90,7 +90,7 @@ metalbond: guard-cluster kubectl ## Install metalbond
 	$(KUBECTL_CTX) apply -k cluster/local/metalbond
 
 metalbond-client: render-public-vip-overlays guard-cluster kubectl ## Install metalbond-client
-	$(KUBECTL_CTX) apply -k "$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/metalbond-client"
+	$(KUBECTL_CTX) apply -k $(if $(wildcard $(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/metalbond-client),"$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/metalbond-client",cluster/local/metalbond-client)
 
 dpservice: guard-cluster kubectl ## Install dpservice
 	$(KUBECTL_CTX) apply -k cluster/local/dpservice
@@ -197,7 +197,7 @@ check-submodules:
 
 .PHONY: test
 test: check-submodules $(KIND) $(KUBECTL)
-	@export PATH=$(LOCALBIN):$(PATH); \
+	@export "PATH=$(LOCALBIN):$(PATH)"; \
 	export BATS_SOURCES=$(LOCALBATS); \
 	export EXAMPLES=$(LOCALDIR)/examples; \
 	export KUBECTL_CTX="$(KUBECTL_CTX)"; \
