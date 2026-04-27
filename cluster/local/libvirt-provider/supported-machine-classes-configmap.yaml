@@ -4,15 +4,11 @@ metadata:
   name: supported-machine-classes
   namespace: libvirt-provider-system
 data:
-  supported-machine-classes.json: |-
-    [
-      {
-        "name": "t3-small",
-        "capabilities": {
-          "resources": {
-            "cpu": 2,
-            "memory": 2147483648
-          }
-        }
-      }
-    ]
+  supported-machine-classes.yaml: |-
+    - apiVersion: compute.ironcore.dev/v1alpha1
+      kind: MachineClass
+      metadata:
+        name: t3-small
+      capabilities:
+        cpu: "2"
+        memory: 2Gi
