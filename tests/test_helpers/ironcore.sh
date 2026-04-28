@@ -31,8 +31,10 @@ deploy_ironcore() {
     if [ "$output" == "$KIND_CLUSTER_NAME" ]; then
         log warn "Re-using existing $KIND_CLUSTER_NAME cluster"
     else
+        log info "Building custom kind node image..."
+        docker build -t ironcore-dev/kind-node:local .
         log info "Running 'make up' to spin up ironcore-in-a-box cluster. This may take a while..."
-        make up
+        make up KIND_IMAGE=ironcore-dev/kind-node:local
     fi
     wait_for 600 pods_ready
     succeed_for 10 60 pods_ready
