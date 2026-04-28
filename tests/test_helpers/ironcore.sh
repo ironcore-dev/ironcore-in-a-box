@@ -36,9 +36,9 @@ deploy_ironcore() {
         log info "Running 'make up' to spin up ironcore-in-a-box cluster. This may take a while..."
         make up KIND_IMAGE=ironcore-dev/kind-node:local
     fi
-    if ! wait_for 600 pods_ready; then
+    if ! wait_for 100 pods_ready; then
         log err "Pods did not become ready in time. Dumping libvirt-provider controller-manager logs:"
-        $KUBECTL_CTX logs -n libvirt-provider -l control-plane=controller-manager --all-containers=true 2>&1 || true
+        log info "$($KUBECTL_CTX logs -n libvirt-provider -l control-plane=controller-manager --all-containers=true 2>&1)" || true
         return 1
     fi
     succeed_for 10 60 pods_ready
