@@ -12,7 +12,7 @@ images:
     newTag: sha-8e5ead5
   - name: libvirt-provider
     newName: ghcr.io/ironcore-dev/libvirt-provider
-    newTag: v0.3.0
+    newTag: pr-717
 
 patches:
   - path: patch-manager-daemonset.yaml
