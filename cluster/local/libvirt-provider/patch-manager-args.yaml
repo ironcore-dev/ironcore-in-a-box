@@ -6,7 +6,6 @@ metadata:
 spec:
   template:
     spec:
-      initContainers: []
       containers:
         - name: manager
           args:
@@ -21,7 +20,7 @@ spec:
         - name: provider
           args:
             - --address=/var/run/libvirt-provider.sock
-            - --supported-machine-classes=/var/cfg/classes/supported-machine-classes.json
+            - --supported-machine-classes=/var/cfg/classes/supported-machine-classes.yaml
             - --libvirt-socket=/var/run/libvirt/libvirt-sock
             - --libvirt-uri=qemu:///system
             - --libvirt-provider-dir=/var/lib/libvirt-provider
@@ -34,4 +33,3 @@ spec:
             - --preferred-machine-types=virt,pc-q35
             - --volume-cache-policy=writeback
             - --zap-log-level=3
-
