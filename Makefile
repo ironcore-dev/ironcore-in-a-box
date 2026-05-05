@@ -173,8 +173,8 @@ $(error no docker or podman found, exiting...)
 endif
 
 ## Tool Versions
-KUBECTL_VERSION ?= v1.32.0
-KIND_VERSION ?= v0.27.0
+KUBECTL_VERSION ?= v1.34.8
+KIND_VERSION ?= v0.32.0
 CMCTL_VERSION ?= latest
 
 .PHONY: cmctl

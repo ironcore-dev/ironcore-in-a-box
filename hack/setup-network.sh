@@ -23,7 +23,12 @@ sysctl -w net.ipv4.conf.overlay-tun.rp_filter=0
 iptables -t mangle -I PREROUTING 1 -i overlay-tun -j MARK --set-mark 1
 
 # Configure routing
-echo '100 ironcore_eth0' >> /etc/iproute2/rt_tables
+# Use the iproute2 drop-in directory instead of appending to the legacy
+# monolithic /etc/iproute2/rt_tables, which is no longer shipped on newer
+# ubuntu/iproute2 versions used by recent kindest/node base images.
+# mkdir -p ensures the directory exists on minimal container rootfs.
+mkdir -p /etc/iproute2/rt_tables.d
+echo '100 ironcore_eth0' > /etc/iproute2/rt_tables.d/ironcore.conf
 ip route add default via $(ip r | grep default | awk '{print $3}') dev eth0 table 100
 ip rule add fwmark 1 lookup 100
 
