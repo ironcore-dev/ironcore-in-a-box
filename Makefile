@@ -14,6 +14,8 @@ KIND_IMAGE := ghcr.io/ironcore-dev/kind-node:latest
 # Configure the kind cluster name
 KIND_CLUSTER_NAME ?= ironcore-in-a-box
 export KIND_CLUSTER_NAME
+export LIBVIRT_PROVIDER_CONFIG_DIR
+export LIBVIRT_PROVIDER_IMAGE_TAG
 
 # Expected kubectl context for the kind cluster
 KIND_CONTEXT := kind-$(KIND_CLUSTER_NAME)
@@ -57,6 +59,16 @@ guard-cluster: ## Verify the target kind cluster exists and kubectl context is c
 render-public-vip-overlays: guard-cluster ## Render runtime kustomize overlays from detected public VIP config
 	@hack/render-public-vip-overlays.sh "$(CRE)" "$(KIND_CLUSTER_NAME)" "$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)"
 
+.PHONY: prepare-local-config
+prepare-local-config: ## Copy base/cluster to .tmp/config and apply local mutations
+	@hack/prepare-local-config.sh
+
+.PHONY: kind-load-libvirt-provider
+kind-load-libvirt-provider: guard-cluster ## Load local libvirt-provider image into kind cluster
+ifdef LIBVIRT_PROVIDER_IMAGE_TAG
+	$(KIND_CTX) load docker-image ghcr.io/ironcore-dev/libvirt-provider:$(LIBVIRT_PROVIDER_IMAGE_TAG)
+endif
+
 kind-cluster: kind ## Create a kind cluster
 	$(KIND_CTX) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml
 
@@ -70,70 +82,70 @@ delete: ## Delete the kind cluster
 ## Install components
 up: prepare ironcore ironcore-net apinetlet setup-network metalnetlet libvirt-provider ## Bring up the ironcore stack
 
-prepare: kubectl cmctl kind-cluster ## Prepare the environment
-	$(KUBECTL_CTX) apply -k cluster/local/prepare
+prepare: prepare-local-config kubectl cmctl kind-cluster ## Prepare the environment
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/prepare
 	$(CMCTL) check api --wait 120s
 
 ironcore: prepare kubectl ## Install the ironcore
-	$(KUBECTL_CTX) apply -k cluster/local/ironcore
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/ironcore
 
 ironcore-net: render-public-vip-overlays guard-cluster kubectl ## Install the ironcore-net
 	$(KUBECTL_CTX) apply -k $(if $(wildcard $(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net),"$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net",cluster/local/ironcore-net)
 
-apinetlet: guard-cluster kubectl ## Install the apinetlet
-	$(KUBECTL_CTX) apply -k cluster/local/apinetlet
+apinetlet: prepare-local-config guard-cluster kubectl ## Install the apinetlet
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/apinetlet
 
-metalnetlet: guard-cluster kubectl ## Install the metalnetlet
-	$(KUBECTL_CTX) apply -k cluster/local/metalnetlet
+metalnetlet: prepare-local-config guard-cluster kubectl ## Install the metalnetlet
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/metalnetlet
 
-metalbond: guard-cluster kubectl ## Install metalbond
-	$(KUBECTL_CTX) apply -k cluster/local/metalbond
+metalbond: prepare-local-config guard-cluster kubectl ## Install metalbond
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/metalbond
 
 metalbond-client: render-public-vip-overlays guard-cluster kubectl ## Install metalbond-client
 	$(KUBECTL_CTX) apply -k $(if $(wildcard $(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/metalbond-client),"$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/metalbond-client",cluster/local/metalbond-client)
 
-dpservice: guard-cluster kubectl ## Install dpservice
-	$(KUBECTL_CTX) apply -k cluster/local/dpservice
+dpservice: prepare-local-config guard-cluster kubectl ## Install dpservice
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/dpservice
 
-metalnet: guard-cluster kubectl ## Install metalnet
-	$(KUBECTL_CTX) apply -k cluster/local/metalnet
+metalnet: prepare-local-config guard-cluster kubectl ## Install metalnet
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/metalnet
 
 
-libvirt-provider: guard-cluster kubectl ## Install the libvirt-provider
-	$(KUBECTL_CTX) apply -k cluster/local/libvirt-provider
+libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster kubectl ## Install the libvirt-provider
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/libvirt-provider
 
 ## Remove components
 down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalbond-client remove-metalnetlet remove-libvirt-provider unprepare ## Remove the ironcore stack
 
 remove-ironcore: guard-cluster kubectl ## Remove the ironcore
-	$(KUBECTL_CTX) delete -k cluster/local/ironcore
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/ironcore
 
 remove-ironcore-net: guard-cluster kubectl ## Remove the ironcore
 	$(KUBECTL_CTX) delete -k cluster/local/ironcore-net
 
 remove-apinetlet: guard-cluster kubectl ## Remove the apinetlet
-	$(KUBECTL_CTX) delete -k cluster/local/apinetlet
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/apinetlet
 
 remove-metalnetlet: guard-cluster kubectl ## Remove the metalnetlet
-	$(KUBECTL_CTX) delete -k cluster/local/metalnetlet
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalnetlet
 
 remove-metalbond: guard-cluster kubectl ## Remove metalbond
-	$(KUBECTL_CTX) delete -k cluster/local/metalbond
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalbond
 
 remove-metalbond-client: guard-cluster kubectl ## Remove metalbond
 	$(KUBECTL_CTX) delete -k cluster/local/metalbond-client
 
 remove-dpservice: guard-cluster kubectl ## Remove dpservice
-	$(KUBECTL_CTX) delete -k cluster/local/dpservice
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/dpservice
 
 remove-metalnet: guard-cluster kubectl ## Remove metalnet
-	$(KUBECTL_CTX) delete -k cluster/local/metalnet
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalnet
 
 remove-libvirt-provider: guard-cluster kubectl ## Remove libvirt-provider
-	$(KUBECTL_CTX) delete -k cluster/local/libvirt-provider
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/libvirt-provider
 
 unprepare: guard-cluster kubectl ## Unprepare the environment
-	$(KUBECTL_CTX) delete -k cluster/local/prepare
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/prepare
 
 ##@ Dependencies
 

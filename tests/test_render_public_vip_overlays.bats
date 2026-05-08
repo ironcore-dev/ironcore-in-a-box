@@ -70,6 +70,7 @@ teardown() {
 
     cp hack/detect-public-vip-config.sh "$sandbox_repo/hack/"
     cp hack/render-public-vip-overlays.sh "$sandbox_repo/hack/"
+    cp hack/lib.sh "$sandbox_repo/hack/"
     chmod +x "$sandbox_repo/hack/detect-public-vip-config.sh" "$sandbox_repo/hack/render-public-vip-overlays.sh"
 
     cat > "$sandbox_repo/base/ironcore-net/patch-apiserver-deployment.yaml" <<'EOF'

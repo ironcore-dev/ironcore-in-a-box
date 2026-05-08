@@ -5,29 +5,7 @@
 
 set -euo pipefail
 
-# Portable replacement for GNU realpath --relative-to (BSD realpath lacks this flag).
-# Usage: _relpath <target> <base>
-_relpath() {
-    local target base
-    target=$(cd "$1" && pwd)
-    base=$(cd "$2" && pwd)
-
-    local common="$base"
-    while [ "${target#"$common"}" = "$target" ]; do
-        common=$(dirname "$common")
-    done
-
-    local up=""
-    local rest="$base"
-    while [ "$rest" != "$common" ]; do
-        up="../$up"
-        rest=$(dirname "$rest")
-    done
-
-    local rel="${target#"$common"}"
-    rel="${rel#/}"
-    printf '%s\n' "${up}${rel}"
-}
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 if [ "$#" -ne 3 ]; then
     echo "usage: $0 <container-runtime-binary> <kind-cluster-name> <runtime-overlays-dir>" >&2
@@ -60,8 +38,8 @@ ironcore_net_overlay="$runtime_overlays_dir/ironcore-net"
 metalbond_client_overlay="$runtime_overlays_dir/metalbond-client"
 mkdir -p "$ironcore_net_overlay" "$metalbond_client_overlay"
 
-ironcore_net_base=$(_relpath "$repo_root/cluster/local/ironcore-net" "$ironcore_net_overlay")
-metalbond_client_base=$(_relpath "$repo_root/cluster/local/metalbond-client" "$metalbond_client_overlay")
+ironcore_net_base=$(relpath "$repo_root/cluster/local/ironcore-net" "$ironcore_net_overlay")
+metalbond_client_base=$(relpath "$repo_root/cluster/local/metalbond-client" "$metalbond_client_overlay")
 
 cat > "$ironcore_net_overlay/kustomization.yaml" <<EOF
 apiVersion: kustomize.config.k8s.io/v1beta1
