@@ -68,6 +68,25 @@ This command will:
 
 During `make up`, the IPv4 public VIP range is auto-detected from the current kind container network (for example `172.19.1.0/24` when kind runs on `172.19.0.0/16`) and used to render runtime kustomize overlays under `.tmp/runtime-overlays/`.
 
+### Running against a local libvirt-provider
+
+For development on `libvirt-provider` you can point IronCore in a Box at a local checkout and/or a custom image tag instead of the upstream defaults. When either of the following environment variables is set, `make up` writes a mutated copy of the kustomize tree to `.tmp/config/` and deploys from there:
+
+| Variable | Effect |
+|---|---|
+| `LIBVIRT_PROVIDER_CONFIG_DIR` | Replace the remote `github.com/ironcore-dev/libvirt-provider/config/default?ref=...` kustomize resource with a relative path to a local `libvirt-provider/config/default` directory. |
+| `LIBVIRT_PROVIDER_IMAGE_TAG` | Override the libvirt-provider container image tag (resolved against `ghcr.io/ironcore-dev/libvirt-provider`). |
+
+Example — deploy from a local checkout with a locally-built image:
+
+```sh
+LIBVIRT_PROVIDER_CONFIG_DIR=../libvirt-provider/config/default \
+LIBVIRT_PROVIDER_IMAGE_TAG=local \
+  make up
+```
+
+Both variables are independent and can be used on their own. With neither set, the upstream pinned versions are used unchanged.
+
 ## Examples
 
 You can find examples of how to use the IronCore API in the [Examples](examples/) directory. You can spin up a VM in a [VPC / Overlay Network](https://en.wikipedia.org/wiki/Virtual_private_cloud) with a virtual IP. Using the command `kubectl get machine,network,nic,virtualip` to find out status and more information regarding the provisioned VM. By default, VMs enable password login for easy accessing and testing. The default username and password are `ironcore` and `best123`. Customized ignition can be also generated and used for other purposes.

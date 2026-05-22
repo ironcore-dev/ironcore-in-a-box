@@ -34,9 +34,8 @@ teardown() {
 }
 
 @test "copies base and cluster to .tmp/config without mutations when no env vars set" {
-    run hack/prepare-local-config.sh
+    hack/prepare-local-config.sh
 
-    assert_success
     assert [ -d ".tmp/config/base/libvirt-provider" ]
     assert [ -d ".tmp/config/cluster/local/libvirt-provider" ]
 
@@ -51,9 +50,7 @@ teardown() {
 @test "replaces remote resource with local path when LIBVIRT_PROVIDER_CONFIG_DIR is set" {
     export LIBVIRT_PROVIDER_CONFIG_DIR="$FAKE_PROVIDER_DIR"
 
-    run hack/prepare-local-config.sh
-
-    assert_success
+    hack/prepare-local-config.sh
 
     # Remote git ref should be gone
     run grep -F "github.com/ironcore-dev/libvirt-provider/config/default" .tmp/config/base/libvirt-provider/kustomization.yaml
@@ -71,9 +68,7 @@ teardown() {
 @test "overrides image tag when LIBVIRT_PROVIDER_IMAGE_TAG is set" {
     export LIBVIRT_PROVIDER_IMAGE_TAG="local"
 
-    run hack/prepare-local-config.sh
-
-    assert_success
+    hack/prepare-local-config.sh
 
     # Remote git ref should still be present
     run grep -F "github.com/ironcore-dev/libvirt-provider/config/default" .tmp/config/base/libvirt-provider/kustomization.yaml
@@ -88,9 +83,7 @@ teardown() {
     export LIBVIRT_PROVIDER_CONFIG_DIR="$FAKE_PROVIDER_DIR"
     export LIBVIRT_PROVIDER_IMAGE_TAG="local"
 
-    run hack/prepare-local-config.sh
-
-    assert_success
+    hack/prepare-local-config.sh
 
     # Remote git ref should be gone
     run grep -F "github.com/ironcore-dev/libvirt-provider/config/default" .tmp/config/base/libvirt-provider/kustomization.yaml
