@@ -85,8 +85,12 @@ cleanup-storage: guard-cluster
 delete: ## Delete the kind cluster
 	$(KIND_CTX) delete cluster
 
+delete-storage: cleanup-storage delete
+
 ## Install components
 up: prepare ironcore ironcore-net apinetlet setup-network metalnetlet libvirt-provider ## Bring up the ironcore stack
+
+up-storage: up rook ceph-volume-provider
 
 prepare: prepare-local-config kubectl cmctl kind-cluster ## Prepare the environment
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/prepare
@@ -128,6 +132,8 @@ libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster 
 
 ## Remove components
 down: remove-libvirt-provider remove-metalnetlet remove-metalnet remove-dpservice remove-metalbond-client remove-metalbond remove-apinetlet remove-ironcore-net remove-ironcore unprepare ## Remove the ironcore stack
+
+down-storage: remove-ceph-volume-provider remove-rook down
 
 remove-ironcore: guard-cluster kubectl ## Remove the ironcore
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/ironcore  --ignore-not-found=true
