@@ -26,8 +26,7 @@ spec:
             - --ceph-user=admin
             - --ceph-pool=ceph-volume-provider
             - --ceph-client=client.ceph-volume-provider
-            # TODO: How to set the IP address of the monitor? headless service is not resolvable from libvirt
-            - --ceph-monitors=10.96.11.187:6789
+            - --ceph-monitors=CHANGED_BY_hack/detect-ceph-mon-endpoints.sh
             - --ceph-kek-path=/var/cfg/kek/passphrase
             - --limits-burst-duration=60
             - --limits-burst-factor=20

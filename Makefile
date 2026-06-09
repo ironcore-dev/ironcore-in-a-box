@@ -125,6 +125,8 @@ rook: prepare-local-config guard-cluster kubectl setup-storage ## Install rook
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/rook-cluster
 
 ceph-volume-provider: prepare-local-config guard-cluster kubectl ## Install the ceph-volume-provider
+	# TODO: replace this hack once https://github.com/ironcore-dev/ceph-provider/issues/850 is implemented
+	@hack/detect-ceph-mon-enpoints.sh
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/ceph-volume-provider
 
 libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster kubectl ## Install the libvirt-provider
