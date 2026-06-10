@@ -115,37 +115,37 @@ libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster 
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/libvirt-provider
 
 ## Remove components
-down: remove-ironcore remove-ironcore-net remove-apinetlet remove-metalnet remove-dpservice remove-metalbond remove-metalbond-client remove-metalnetlet remove-libvirt-provider unprepare ## Remove the ironcore stack
+down: remove-libvirt-provider remove-metalnetlet remove-metalnet remove-dpservice remove-metalbond-client remove-metalbond remove-apinetlet remove-ironcore-net remove-ironcore unprepare ## Remove the ironcore stack
 
 remove-ironcore: guard-cluster kubectl ## Remove the ironcore
-	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/ironcore
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/ironcore  --ignore-not-found=true
 
 remove-ironcore-net: guard-cluster kubectl ## Remove the ironcore
-	$(KUBECTL_CTX) delete -k cluster/local/ironcore-net
+	$(KUBECTL_CTX) delete -k cluster/local/ironcore-net --ignore-not-found=true
 
 remove-apinetlet: guard-cluster kubectl ## Remove the apinetlet
-	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/apinetlet
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/apinetlet --ignore-not-found=true
 
 remove-metalnetlet: guard-cluster kubectl ## Remove the metalnetlet
-	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalnetlet
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalnetlet --ignore-not-found=true
 
 remove-metalbond: guard-cluster kubectl ## Remove metalbond
-	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalbond
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalbond --ignore-not-found=true
 
 remove-metalbond-client: guard-cluster kubectl ## Remove metalbond
-	$(KUBECTL_CTX) delete -k cluster/local/metalbond-client
+	$(KUBECTL_CTX) delete -k cluster/local/metalbond-client --ignore-not-found=true
 
 remove-dpservice: guard-cluster kubectl ## Remove dpservice
-	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/dpservice
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/dpservice --ignore-not-found=true
 
 remove-metalnet: guard-cluster kubectl ## Remove metalnet
-	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalnet
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalnet --ignore-not-found=true
 
 remove-libvirt-provider: guard-cluster kubectl ## Remove libvirt-provider
-	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/libvirt-provider
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/libvirt-provider --ignore-not-found=true
 
 unprepare: guard-cluster kubectl ## Unprepare the environment
-	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/prepare
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/prepare --ignore-not-found=true
 
 ##@ Dependencies
 
