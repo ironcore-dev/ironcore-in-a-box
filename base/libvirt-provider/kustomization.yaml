@@ -9,7 +9,7 @@ resources:
 images:
   - name: machinepoollet
     newName: ghcr.io/ironcore-dev/ironcore-machinepoollet
-    newTag: sha-8e5ead5
+    newTag: v0.4.1
   - name: libvirt-provider
     newName: ghcr.io/ironcore-dev/libvirt-provider
     newTag: v0.3.1

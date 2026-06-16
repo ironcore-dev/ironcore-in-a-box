@@ -1,13 +1,13 @@
 resources:
-  - github.com/ironcore-dev/ironcore-net/config/etcdless?ref=324c97f7fc8f982295506c5ea8122d70149e468e
+  - github.com/ironcore-dev/ironcore-net/config/etcdless?ref=v0.4.0
 
 images:
   - name: apiserver
     newName: ghcr.io/ironcore-dev/ironcore-net/apiserver
-    newTag: sha-324c97f
+    newTag: v0.4.0
   - name: controller:latest
     newName: ghcr.io/ironcore-dev/ironcore-net/controller-manager
-    newTag: sha-324c97f
+    newTag: v0.4.0
 
 patches:
   - path: patch-apiserver-deployment.yaml

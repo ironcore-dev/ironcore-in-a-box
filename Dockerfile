@@ -1,4 +1,4 @@
-FROM kindest/node:v1.34.8
+FROM kindest/node:v1.35.5
 
 # Configure the system
 RUN sed -i 's/UID_MAX.*/UID_MAX 65536/' /etc/login.defs && \
