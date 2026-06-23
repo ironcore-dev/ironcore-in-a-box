@@ -6,7 +6,7 @@ spec:
   volumes:
     - name: rootdisk
       localDisk:
-        image: ghcr.io/ironcore-dev/os-images/virtualization/gardenlinux:latest
+        image: ghcr.io/ironcore-dev/gardenlinux/gardener:2150.4.0-kvm
   networkInterfaces:
     - name: default
       networkInterfaceRef:
@@ -53,4 +53,3 @@ kind: Secret
 metadata:
   creationTimestamp: null
   name: ignition
-
