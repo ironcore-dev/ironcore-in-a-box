@@ -1,0 +1,11 @@
+# Patch to modify correct setup for gardenshed
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: rook-ceph-operator-config
+  namespace: rook-ceph
+data:
+  ROOK_CEPH_ALLOW_LOOP_DEVICES: "true"
+
+  ROOK_CSI_DISABLE_DRIVER: "true"
+  ROOK_USE_CSI_OPERATOR: "false"

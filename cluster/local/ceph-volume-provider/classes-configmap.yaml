@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: supported-volume-classes
+  namespace: ceph-volume-provider-system
+data:
+  supported-volume-classes.json: |-
+    [
+      {
+        "name": "general-purpose",
+        "capabilities": {
+          "tps": 262144000,
+          "iops": 16000
+        }
+      }
+    ]

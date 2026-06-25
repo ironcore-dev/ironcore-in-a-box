@@ -68,6 +68,14 @@ This command will:
 
 During `make up`, the IPv4 public VIP range is auto-detected from the current kind container network (for example `172.19.1.0/24` when kind runs on `172.19.0.0/16`) and used to render runtime kustomize overlays under `.tmp/runtime-overlays/`.
 
+### Installing with storage
+
+By default IronCore in a Box will not deploy storage. If you need volumes in IronCore, run the following install command to deploy the IronCore stack together with ceph:
+
+```sh
+make up-storage
+```
+
 ### Running against a local libvirt-provider
 
 For development on `libvirt-provider` you can point IronCore in a Box at a local checkout and/or a custom image tag instead of the upstream defaults. When either of the following environment variables is set, `make up` writes a mutated copy of the kustomize tree to `.tmp/config/` and deploys from there:
@@ -124,6 +132,14 @@ To remove the kind cluster and all deployed resources, run:
 
 ```sh
 make down
+```
+
+### Uninstall storage
+
+If ceph was installed alongside IronCore, it can be uninstalled with:
+
+```sh
+make down-storage
 ```
 
 
