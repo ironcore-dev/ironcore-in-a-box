@@ -14,7 +14,7 @@ check_example_machine_ssh() {
         return 1
     fi
     local ip=$1; shift
-    sshpass -p "best123" ssh "$ip" -lironcore -oConnectTimeout=10 -oStrictHostKeyChecking=no hostname
+    sshpass -p "best123" ssh "$ip" -lironcore -oConnectTimeout=10 -oStrictHostKeyChecking=no -o IdentitiesOnly=yes -o PubkeyAuthentication=no hostname
     return $?
 }
 
