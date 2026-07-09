@@ -53,6 +53,9 @@ $ brew install chipmk/tap/docker-mac-net-connect
 $ sudo brew services start chipmk/tap/docker-mac-net-connect
 ```
 
+When using docker with colima, its default memory size is small and `dpservice-system` cannot start. 
+If already started, stop colima and then start it with `colima start --edit` and change memory to e.g. 8.
+
 ## Installation
 
 To set up and start the IronCore stack, run the following command from the root of this repository:
@@ -91,7 +94,7 @@ Both variables are independent and can be used on their own. With neither set, t
 
 You can find examples of how to use the IronCore API in the [Examples](examples/) directory. You can spin up a VM in a [VPC / Overlay Network](https://en.wikipedia.org/wiki/Virtual_private_cloud) with a virtual IP. Using the command `kubectl get machine,network,nic,virtualip` to find out status and more information regarding the provisioned VM. By default, VMs enable password login for easy accessing and testing. The default username and password are `ironcore` and `best123`. Customized ignition can be also generated and used for other purposes.
 
-Your local "datacenter" is at your fingertips to test. Ironcore API documentation can be found [here](https://ironcore-dev.github.io/ironcore/api-reference/overview/) which shows the whole capabilities of IronCore.
+Your local "datacenter" is at your fingertips to test. Ironcore API documentation can be found [here](https://ironcore.dev/iaas/api-references/) which shows the whole capabilities of IronCore.
 
 ## Tests
 
