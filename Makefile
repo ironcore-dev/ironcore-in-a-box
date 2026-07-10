@@ -115,7 +115,7 @@ libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster 
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/libvirt-provider
 
 ## Remove components
-down: remove-libvirt-provider remove-metalnetlet remove-metalnet remove-dpservice remove-metalbond-client remove-metalbond remove-apinetlet remove-ironcore-net remove-ironcore unprepare delete ## Remove the ironcore stack
+down: remove-libvirt-provider remove-metalnetlet remove-metalnet remove-dpservice remove-metalbond-client remove-metalbond remove-apinetlet remove-ironcore-net remove-ironcore unprepare ## Remove the ironcore stack
 
 remove-ironcore: guard-cluster kubectl ## Remove the ironcore
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/ironcore  --ignore-not-found=true
