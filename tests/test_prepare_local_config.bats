@@ -43,7 +43,7 @@ teardown() {
     run grep -F "github.com/ironcore-dev/libvirt-provider/config/default" .tmp/config/base/libvirt-provider/kustomization.yaml
     assert_success
 
-    run grep "newTag: v0.3.1" .tmp/config/base/libvirt-provider/kustomization.yaml
+    run grep "newTag: v0.4.0" .tmp/config/base/libvirt-provider/kustomization.yaml
     assert_success
 }
 
@@ -61,7 +61,7 @@ teardown() {
     assert_success
 
     # Image tag should be unchanged
-    run grep "newTag: v0.3.1" .tmp/config/base/libvirt-provider/kustomization.yaml
+    run grep "newTag: v0.4.0" .tmp/config/base/libvirt-provider/kustomization.yaml
     assert_success
 }
 
