@@ -2,16 +2,16 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - github.com/ironcore-dev/ironcore/config/etcdless?ref=v0.4.2
+  - github.com/ironcore-dev/ironcore/config/etcdless?ref=v0.4.3
   - certificates.yaml
 
 images:
   - name: apiserver
     newName: ghcr.io/ironcore-dev/ironcore-apiserver
-    newTag: v0.4.2
+    newTag: v0.4.3
   - name: controller
     newName: ghcr.io/ironcore-dev/ironcore-controller-manager
-    newTag: v0.4.2
+    newTag: v0.4.3
 
 patches:
   - path: patch-apiserver-deployment.yaml
