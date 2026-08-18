@@ -88,6 +88,9 @@ prepare: prepare-local-config kubectl cmctl kind-cluster ## Prepare the environm
 
 ironcore: prepare kubectl ## Install the ironcore
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/ironcore
+	$(KUBECTL_CTX) -n ironcore-system rollout status deployment/ironcore-apiserver --timeout=5m
+	@echo "Waiting for ironcore aggregated APIs to become available..."
+	$(KUBECTL_CTX) get apiservice -o name | grep '\.ironcore\.dev$$' | xargs $(KUBECTL_CTX) wait --for=condition=Available --timeout=5m
 
 ironcore-net: render-public-vip-overlays guard-cluster kubectl ## Install the ironcore-net
 	$(KUBECTL_CTX) apply -k $(if $(wildcard $(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net),"$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net",cluster/local/ironcore-net)
