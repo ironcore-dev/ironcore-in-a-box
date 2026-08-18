@@ -3,9 +3,6 @@ name: Tests
 on:
   pull_request:
     types: [ assigned, opened, synchronize, reopened ]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
   schedule:
     # Run regularly at 3:22 each Monday
     - cron: "22 3 * * 1"
