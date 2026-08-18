@@ -100,6 +100,7 @@ Your local "datacenter" is at your fingertips to test. Ironcore API documentatio
 
 This project uses [BATS](https://bats-core.readthedocs.io/en/stable/index.html) for testing. It comes bundled with the repository in the form of git submodules and does not need to be externally installed. There are however some additional dependencies needed for tests:
 
+* kustomize
 * sshpass
 * (Optional) shellcheck - Only if you want to lint tests
 
