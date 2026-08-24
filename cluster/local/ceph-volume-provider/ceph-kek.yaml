@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  passphrase: aXJvbmNvcmUtaW4tYS1ib3gtcGFzc3BocmFzZTEyMzQ=
+kind: Secret
+metadata:
+  name: ceph-kek
+  namespace: rook-ceph
+type: Opaque

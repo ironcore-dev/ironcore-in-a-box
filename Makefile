@@ -76,11 +76,21 @@ setup-network: guard-cluster metalbond metalbond-client dpservice metalnet ## Cu
 	$(KUBECTL_CTX) rollout status daemonset/dpservice -n dpservice-system --timeout=360s && \
 	$(KIND_CTX) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-network.sh {}:/setup-network.sh && $(CRE) exec {} bash -c "bash /setup-network.sh"'
 
+setup-storage: guard-cluster
+	$(KIND_CTX) get nodes | xargs -I {} sh -c '$(CRE) cp hack/setup-storage.sh {}:/setup-storage.sh && $(CRE) exec {} bash -c "bash /setup-storage.sh"'
+
+cleanup-storage: guard-cluster
+	$(KIND_CTX) get nodes | xargs -I {} sh -c '$(CRE) cp hack/cleanup-storage.sh {}:/cleanup-storage.sh && $(CRE) exec {} bash -c "bash /cleanup-storage.sh"'
+
 delete: ## Delete the kind cluster
 	$(KIND_CTX) delete cluster
 
+delete-storage: cleanup-storage delete
+
 ## Install components
 up: prepare ironcore ironcore-net apinetlet setup-network metalnetlet libvirt-provider ## Bring up the ironcore stack
+
+up-storage: up rook ceph-volume-provider
 
 prepare: prepare-local-config kubectl cmctl kind-cluster ## Prepare the environment
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/prepare
@@ -110,12 +120,22 @@ dpservice: prepare-local-config guard-cluster kubectl ## Install dpservice
 metalnet: prepare-local-config guard-cluster kubectl ## Install metalnet
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/metalnet
 
+rook: prepare-local-config guard-cluster kubectl setup-storage ## Install rook
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/rook-operator
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/rook-cluster
+
+ceph-volume-provider: prepare-local-config guard-cluster kubectl ## Install the ceph-volume-provider
+	# TODO: replace this hack once https://github.com/ironcore-dev/ceph-provider/issues/850 is implemented
+	@hack/detect-ceph-mon-enpoints.sh
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/ceph-volume-provider
 
 libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster kubectl ## Install the libvirt-provider
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/libvirt-provider
 
 ## Remove components
 down: remove-libvirt-provider remove-metalnetlet remove-metalnet remove-dpservice remove-metalbond-client remove-metalbond remove-apinetlet remove-ironcore-net remove-ironcore unprepare ## Remove the ironcore stack
+
+down-storage: remove-ceph-volume-provider remove-rook down
 
 remove-ironcore: guard-cluster kubectl ## Remove the ironcore
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/ironcore  --ignore-not-found=true
@@ -140,6 +160,13 @@ remove-dpservice: guard-cluster kubectl ## Remove dpservice
 
 remove-metalnet: guard-cluster kubectl ## Remove metalnet
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/metalnet --ignore-not-found=true
+
+remove-rook: guard-cluster kubectl cleanup-storage ## Remove rook
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/rook-cluster
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/rook-operator
+
+remove-ceph-volume-provider: guard-cluster kubectl ## Remove the ceph-volume-provider
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/ceph-volume-provider
 
 remove-libvirt-provider: guard-cluster kubectl ## Remove libvirt-provider
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/libvirt-provider --ignore-not-found=true
