@@ -70,7 +70,11 @@ ifdef LIBVIRT_PROVIDER_IMAGE_TAG
 endif
 
 kind-cluster: kind ## Create a kind cluster
-	$(KIND_CTX) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml
+	@if $(KIND) get clusters 2>/dev/null | grep -qx '$(KIND_CLUSTER_NAME)'; then \
+		echo "kind cluster '$(KIND_CLUSTER_NAME)' already exists, skipping creation."; \
+	else \
+		$(KIND_CTX) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml; \
+	fi
 
 setup-network: guard-cluster metalbond metalbond-client dpservice metalnet ## Customize the network on the kind nodes
 	$(KUBECTL_CTX) rollout status daemonset/dpservice -n dpservice-system --timeout=360s && \
@@ -98,6 +102,13 @@ prepare: prepare-local-config kubectl cmctl kind-cluster ## Prepare the environm
 
 ironcore: prepare kubectl ## Install the ironcore
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/ironcore
+	@echo "Waiting for ironcore aggregated APIServices to become Available..."
+	$(KUBECTL_CTX) wait --for=condition=Available --timeout=300s \
+		apiservice/v1alpha1.core.ironcore.dev \
+		apiservice/v1alpha1.compute.ironcore.dev \
+		apiservice/v1alpha1.networking.ironcore.dev \
+		apiservice/v1alpha1.ipam.ironcore.dev \
+		apiservice/v1alpha1.storage.ironcore.dev
 
 ironcore-net: render-public-vip-overlays guard-cluster kubectl ## Install the ironcore-net
 	$(KUBECTL_CTX) apply -k $(if $(wildcard $(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net),"$(PUBLIC_VIP_RUNTIME_OVERLAYS_DIR)/ironcore-net",cluster/local/ironcore-net)
@@ -130,6 +141,7 @@ ceph-volume-provider: prepare-local-config guard-cluster kubectl ## Install the 
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/ceph-volume-provider
 
 libvirt-provider: kind-load-libvirt-provider prepare-local-config guard-cluster kubectl ## Install the libvirt-provider
+	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/libvirt-provider-lease-rbac
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/libvirt-provider
 
 ## Remove components
@@ -170,6 +182,7 @@ remove-ceph-volume-provider: guard-cluster kubectl ## Remove the ceph-volume-pro
 
 remove-libvirt-provider: guard-cluster kubectl ## Remove libvirt-provider
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/libvirt-provider --ignore-not-found=true
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/libvirt-provider-lease-rbac --ignore-not-found=true
 
 unprepare: guard-cluster kubectl ## Unprepare the environment
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/prepare --ignore-not-found=true
