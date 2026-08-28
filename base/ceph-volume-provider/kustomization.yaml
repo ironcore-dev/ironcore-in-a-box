@@ -5,15 +5,15 @@ namespace: ceph-volume-provider-system
 
 resources:
   - poollet-rbac
-  - github.com/ironcore-dev/ceph-provider/config/ceph-volume-provider/default?ref=v0.5.0
+  - github.com/ironcore-dev/ceph-provider/config/ceph-volume-provider/default?ref=v0.6.0
 
 images:
   - name: volumepoollet
     newName: ghcr.io/ironcore-dev/ironcore-volumepoollet
-    newTag: v0.5.0
+    newTag: v0.6.1
   - name: ceph-volume-provider
     newName: ghcr.io/ironcore-dev/ceph-volume-provider
-    newTag: v0.5.0
+    newTag: v0.6.0
 
 patches:
   - path: patch-manager-deployment.yaml
