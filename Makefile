@@ -213,7 +213,7 @@ $(error no docker or podman found, exiting...)
 endif
 
 ## Tool Versions
-KUBECTL_VERSION ?= v1.35.5
+KUBECTL_VERSION ?= v1.36.4
 KIND_VERSION ?= v0.32.0
 CMCTL_VERSION ?= latest
 
