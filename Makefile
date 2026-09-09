@@ -206,6 +206,7 @@ KUBECTL_BIN ?= $(LOCALBIN)/kubectl
 KIND ?= $(LOCALBIN)/kind-$(KIND_VERSION)
 KIND_BIN ?= $(LOCALBIN)/kind
 CMCTL ?= $(LOCALBIN)/cmctl-$(CMCTL_VERSION)
+ADDLICENSE ?= $(LOCALBIN)/addlicense
 BATS ?= $(LOCALDIR)/.bats/bats-core/bin/bats
 CRE ?= $(shell if cre=$$(command -v docker); then echo $$cre; elif cre=$$(command -v podman); then echo $$cre; fi)
 ifeq ($(CRE),)
@@ -216,6 +217,7 @@ endif
 KUBECTL_VERSION ?= v1.36.4
 KIND_VERSION ?= v0.32.0
 CMCTL_VERSION ?= latest
+ADDLICENSE_VERSION ?= v1.1.1
 
 .PHONY: cmctl
 cmctl: $(CMCTL) ## Download cmctl locally if necessary.
@@ -227,6 +229,11 @@ kind: $(KIND) ## Download kind locally if necessary.
 $(KIND): $(LOCALBIN)
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind,$(KIND_VERSION)); \
 	ln -sf "$(KIND)" "$(KIND_BIN)"
+
+.PHONY: addlicense
+addlicense: $(ADDLICENSE) ## Download addlicense locally if necessary.
+$(ADDLICENSE): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/google/addlicense@$(ADDLICENSE_VERSION)
 
 .PHONY: kubectl
 kubectl: $(KUBECTL) ## Download kubectl locally if necessary.
@@ -259,6 +266,14 @@ test: check-submodules $(KIND) $(KUBECTL)
 .PHONY: lint-tests
 lint-tests:
 	@find tests/ -name "*.sh" -o -name "*.bats" | xargs shellcheck && echo "Success."
+
+.PHONY: add-license
+add-license: addlicense ## Add license headers to all shell files.
+	find . -path ./.bats -prune -o -name '*.sh' -print0 | xargs -0 "$(ADDLICENSE)" -f hack/license-header.txt
+
+.PHONY: check-license
+check-license: addlicense ## Check license headers in all shell files.
+	find . -path ./.bats -prune -o -name '*.sh' -print0 | xargs -0 "$(ADDLICENSE)" -check -c 'IronCore authors'
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary (ideally with version)
