@@ -29,7 +29,7 @@ spec:
             - --gc-vm-graceful-shutdown-timeout=0
             - --apinet-node-name=local.$(NODE_NAME)
             - --enable-hugepages=false
-            - --preferred-domain-types=qemu
+            - --preferred-domain-types=kvm,qemu
             - --preferred-machine-types=virt,pc-q35
             - --volume-cache-policy=writeback
             - --zap-log-level=3
