@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: supported-machine-classes
-  namespace: libvirt-provider
+  namespace: libvirt-provider-system
 data:
   supported-machine-classes.yaml: |-
     - apiVersion: compute.ironcore.dev/v1alpha1
