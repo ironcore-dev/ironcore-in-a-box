@@ -1,10 +1,21 @@
+# Provider auth: used by the ceph-volume-provider itself to connect to Ceph.
 apiVersion: ceph.rook.io/v1
 kind: CephClient
 metadata:
-  name: ceph-volume-provider
+  name: volume-provisioner
   namespace: rook-ceph
 spec:
   caps:
-    mgr: profile rbd pool=ceph-volume-provider
+    mon: 'profile rbd, allow command "auth get-key"'
+    osd: profile rbd pool=ceph-volume-provider
+---
+# Consumer auth: key handed to Hypervisors so they can connect to RBD directly.
+apiVersion: ceph.rook.io/v1
+kind: CephClient
+metadata:
+  name: volume-consumer
+  namespace: rook-ceph
+spec:
+  caps:
     mon: profile rbd
     osd: profile rbd pool=ceph-volume-provider
