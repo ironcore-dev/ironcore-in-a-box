@@ -22,8 +22,10 @@ spec:
           volumeMounts:
             - mountPath: /var/cfg/classes
               name: supported-volume-classes
-            - mountPath: /var/cfg/ceph/
+            - mountPath: /var/cfg/ceph/userKey
               name: ceph-keyring
+              subPath: userKey
+              readOnly: true
             - mountPath: /var/cfg/kek
               name: ceph-kek
       volumes:
@@ -32,7 +34,7 @@ spec:
             name: supported-volume-classes
         - name: ceph-keyring
           secret:
-            secretName: rook-ceph-admin-keyring
+            secretName: rook-ceph-client-volume-provisioner
         - name: ceph-kek
           secret:
             secretName: ceph-kek
