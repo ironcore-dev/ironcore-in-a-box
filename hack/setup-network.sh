@@ -60,4 +60,4 @@ done
 
 # Add permanent neighbor entry
 ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:00 dev dtap0 router nud permanent 2>/dev/null || true
-ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:01 dev dtap1 router nud permanent 2>/dev/null || true
+ip -6 neigh replace fe80::1 lladdr 22:22:22:22:22:01 dev dtap1 router nud permanent 2>/dev/null || true
