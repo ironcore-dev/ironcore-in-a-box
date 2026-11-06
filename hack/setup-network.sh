@@ -48,7 +48,7 @@ if ! ip route show table 100 | grep -q "default via"; then
 fi
 
 # Add ip rule if it doesn't exist
-if ! ip rule show | grep -q "fwmark 1 lookup 100"; then
+if ! ip rule show | grep -q "fwmark 0x1 lookup 100"; then
     ip rule add fwmark 1 lookup 100
 fi
 
