@@ -53,10 +53,12 @@ if ! ip rule show | grep -q "fwmark 0x1 lookup 100"; then
 fi
 
 # Add IPv6 route with retry mechanism
-for i in {1..10}; do
-    ip -6 route add 2001:db8:fefe::/48 via fe80::1 dev dtap0 2>/dev/null && break || \
-    { echo "Retrying route addition in 1s..."; sleep 1; }
-done
+if ! ip -6 route show | grep -q "2001:db8:fefe::/48 via fe80::1 dev dtap0"; then
+    for i in {1..10}; do
+        ip -6 route add 2001:db8:fefe::/48 via fe80::1 dev dtap0 2>/dev/null && break || \
+        { echo "Retrying route addition in 1s..."; sleep 1; }
+    done
+fi
 
 # Add permanent neighbor entry
 ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:00 dev dtap0 router nud permanent 2>/dev/null || true
