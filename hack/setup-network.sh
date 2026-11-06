@@ -25,7 +25,7 @@ sysctl -w net.ipv4.ip_forward=1
 sysctl -w net.ipv4.conf.overlay-tun.rp_filter=0
 
 # Add iptables rule
-if ! iptables -t mangle -L PREROUTING | grep -q "overlay-tun.*MARK.*1"; then
+if ! iptables -t mangle -C PREROUTING -i overlay-tun -j MARK --set-mark 1 2>/dev/null; then
     iptables -t mangle -I PREROUTING 1 -i overlay-tun -j MARK --set-mark 1
 fi
 
