@@ -1,0 +1,26 @@
+# those patches exist specifically to eliminate the csi resources
+# i have encountered in the error logs
+# the idea's to trick rook into not requiring the devices of CSI
+# as under the hood it likely requires some "csi-resources.yaml"
+# and let it build the manifest file without them
+
+apiVersion: csi.ceph.io/v1
+kind: Driver
+metadata:
+  name: rook-ceph.cephfs.csi.ceph.com
+  namespace: rook-ceph
+$patch: delete
+---
+apiVersion: csi.ceph.io/v1
+kind: Driver
+metadata:
+  name: rook-ceph.rbd.csi.ceph.com
+  namespace: rook-ceph
+$patch: delete
+---
+apiVersion: csi.ceph.io/v1
+kind: OperatorConfig
+metadata:
+  name: ceph-csi-operator-config
+  namespace: rook-ceph
+$patch: delete
