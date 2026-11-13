@@ -1,0 +1,8 @@
+# Stack namespace: collectors, stores and shippers for the prom/vm/otel
+# comparison live isolated here. monitoring-ui (Grafana) stays in shared/.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring-otel
+  labels:
+    ironcore.dev/observability-stack: otel

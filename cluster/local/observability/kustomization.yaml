@@ -1,0 +1,18 @@
+# Top-level kustomization for the observability overlay.
+#
+# Composes `shared/` (read-tool namespace, Grafana) and `stacks/`
+# (prom, vm, otel). Each stack commit is self-contained: it brings its own
+# namespace, operator, collector and store, and only references the shared
+# monitoring-ui namespace for Grafana datasources. Drop a stack commit to
+# skip that stack.
+#
+# Emitter-side changes (metrics-bind, log-format) live in iiab's own
+# overlays and in hack/mutate-log-format.sh — not here — so iiab emits
+# scrapeable metrics and IEP-#60-compliant JSON logs regardless of whether
+# this observability stack is deployed.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - shared
+  - stacks

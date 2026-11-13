@@ -1,0 +1,10 @@
+# Composes the observability stacks. Each is namespace-isolated and brings
+# its own operator, so they can coexist and be dropped independently.
+# Exception: otel borrows the vm stack's stores — keep them together.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - vm
+  - prom
+  - otel

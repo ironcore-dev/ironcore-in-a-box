@@ -1,0 +1,66 @@
+# Recording rules for the long-term tier.
+#
+# Evaluated every 1m by vmalert, results written to the long-term VMSingle.
+# Two rule groups:
+#   * Gauges: last_over_time — preserves the most recent value per minute
+#   * Counters: increase() wrapped in a recording rule — preserves rate-ability
+#
+# The rules use broad matchers ({source="vm"}) so they capture all metrics
+# scraped by the vm stack's vmagent. The output series keep the original
+# metric names (no prefix/suffix) so queries work identically against
+# both tiers — vmselect merges them seamlessly.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: longterm-downsample
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+spec:
+  groups:
+    # Gauges: keep last value per 1m window
+    - name: longterm-gauges
+      interval: 1m
+      rules:
+        - record: controller_runtime_active_workers
+          expr: last_over_time(controller_runtime_active_workers{source="vm"}[1m])
+        - record: controller_runtime_max_concurrent_reconciles
+          expr: last_over_time(controller_runtime_max_concurrent_reconciles{source="vm"}[1m])
+        - record: go_goroutines
+          expr: last_over_time(go_goroutines{source="vm"}[1m])
+        - record: go_threads
+          expr: last_over_time(go_threads{source="vm"}[1m])
+        - record: process_resident_memory_bytes
+          expr: last_over_time(process_resident_memory_bytes{source="vm"}[1m])
+        - record: process_cpu_seconds_total
+          expr: last_over_time(process_cpu_seconds_total{source="vm"}[1m])
+        - record: go_memstats_alloc_bytes
+          expr: last_over_time(go_memstats_alloc_bytes{source="vm"}[1m])
+        - record: go_memstats_heap_inuse_bytes
+          expr: last_over_time(go_memstats_heap_inuse_bytes{source="vm"}[1m])
+
+    # Counters: keep last value (counters are monotonic, last_over_time
+    # preserves the cumulative value which remains rate()-able)
+    - name: longterm-counters
+      interval: 1m
+      rules:
+        - record: controller_runtime_reconcile_total
+          expr: last_over_time(controller_runtime_reconcile_total{source="vm"}[1m])
+        - record: controller_runtime_reconcile_errors_total
+          expr: last_over_time(controller_runtime_reconcile_errors_total{source="vm"}[1m])
+        - record: controller_runtime_reconcile_time_seconds_sum
+          expr: last_over_time(controller_runtime_reconcile_time_seconds_sum{source="vm"}[1m])
+        - record: controller_runtime_reconcile_time_seconds_count
+          expr: last_over_time(controller_runtime_reconcile_time_seconds_count{source="vm"}[1m])
+        - record: controller_runtime_reconcile_time_seconds_bucket
+          expr: last_over_time(controller_runtime_reconcile_time_seconds_bucket{source="vm"}[1m])
+        - record: workqueue_adds_total
+          expr: last_over_time(workqueue_adds_total{source="vm"}[1m])
+        - record: workqueue_depth
+          expr: last_over_time(workqueue_depth{source="vm"}[1m])
+        - record: workqueue_longest_running_processor_seconds
+          expr: last_over_time(workqueue_longest_running_processor_seconds{source="vm"}[1m])
+        - record: rest_client_requests_total
+          expr: last_over_time(rest_client_requests_total{source="vm"}[1m])
+        - record: certwatcher_read_certificate_total
+          expr: last_over_time(certwatcher_read_certificate_total{source="vm"}[1m])

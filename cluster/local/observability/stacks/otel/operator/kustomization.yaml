@@ -1,0 +1,9 @@
+# OpenTelemetry Operator. Self-namespaces into `opentelemetry-operator-system`.
+# Requires cert-manager to be running for admission-webhook cert issuance;
+# iiab provides cert-manager as part of `make up`, so this is satisfied when
+# `make observability` runs after `make up`.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/open-telemetry/opentelemetry-operator/releases/download/v0.158.0/opentelemetry-operator.yaml

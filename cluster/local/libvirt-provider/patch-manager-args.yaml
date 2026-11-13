@@ -8,9 +8,13 @@ spec:
     spec:
       containers:
         - name: manager
+          ports:
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
           args:
             - --health-probe-bind-address=:8081
-            - --metrics-bind-address=127.0.0.1:8080
+            - --metrics-bind-address=0.0.0.0:8080
             - --machine-pool-name=$(NODE_NAME)
             - --provider-id=libvirt-provider://$(NODE_NAME)
             - --machine-runtime-endpoint=unix:/var/run/libvirt-provider.sock

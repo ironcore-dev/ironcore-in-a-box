@@ -1,0 +1,41 @@
+# Prometheus instance for the `prom` stack.
+#
+# Scrapes IronCore controller-managers via PodMonitors. Stores metrics
+# locally with 1d retention (same as VMSingle in the vm stack for
+# fair comparison). Uses emptyDir storage — data is ephemeral.
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prom
+  namespace: monitoring-prom
+spec:
+  replicas: 1
+  retention: 1d
+  scrapeInterval: 15s
+  externalLabels:
+    source: prom
+  serviceAccountName: prometheus-prom
+  podMonitorSelector:
+    matchLabels:
+      ironcore.dev/observability-stack: prom
+  podMonitorNamespaceSelector: {}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  thanos:
+    image: quay.io/thanos/thanos:v0.37.2
+    objectStorageConfig:
+      key: objstore.yml
+      name: thanos-objectstore
+    # Attach store endpoint so thanos-query can reach the sidecar via dnssrv.
+    listenLocal: false
+  storage:
+    emptyDir:
+      medium: ""
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    fsGroup: 65534

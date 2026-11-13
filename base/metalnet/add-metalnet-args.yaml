@@ -6,7 +6,7 @@
   value: --health-probe-bind-address=:28081
 - op: replace
   path: /spec/template/spec/containers/0/args/1
-  value: --metrics-bind-address=127.0.0.1:28080
+  value: --metrics-bind-address=0.0.0.0:28080
 - op: replace
   path: /spec/template/spec/containers/0/livenessProbe/httpGet/port
   value: 28081

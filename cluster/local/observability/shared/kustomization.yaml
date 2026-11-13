@@ -1,0 +1,16 @@
+# Shared plumbing every stack needs.
+#
+# - namespaces.yaml: the shared read-tool namespace (monitoring-ui, Grafana).
+#   Per-stack stack namespaces live in stacks/*/namespace.yaml.
+# - grafana/:        Grafana OSS as the read tool for Experiment B
+#
+# Operators moved into their stacks (stacks/*/operator/) so each stack
+# commit is self-contained. Stack namespaces live in stacks/*/namespace.yaml;
+# the UI datasources still land in monitoring-ui from each stack.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespaces.yaml
+  - grafana
+  - perses

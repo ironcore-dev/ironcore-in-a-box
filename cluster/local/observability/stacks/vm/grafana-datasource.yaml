@@ -1,0 +1,44 @@
+# Grafana datasources for the `vm` stack.
+#
+# Three datasources, same underlying stores:
+#   * VictoriaMetrics (vm)  — prometheus-type, queries VMSingle
+#   * VictoriaLogs (vm)     — native VL plugin (LogsQL), queries VLSingle directly
+#   * VictoriaLogs via Loki (vm) — Grafana's Loki datasource, queries
+#     VLSingle through loki-vl-proxy (LogQL → LogsQL translation)
+#
+# The two log datasources show the same data through different query
+# languages and Grafana UIs — compare them side-by-side.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources-vm
+  namespace: monitoring-ui
+  labels:
+    ironcore.dev/observability-stack: vm
+data:
+  vm-datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: VictoriaMetrics (vm)
+        uid: vm-metrics
+        type: prometheus
+        access: proxy
+        url: http://vmselect.monitoring-vm.svc.cluster.local:8481/select/0/prometheus
+        isDefault: false
+        editable: true
+        jsonData:
+          timeInterval: 15s
+      - name: VictoriaLogs (vm)
+        uid: vm-logs
+        type: victoriametrics-logs-datasource
+        access: proxy
+        url: http://vlsingle-vlogs.monitoring-vm.svc.cluster.local:9428
+        isDefault: false
+        editable: true
+      - name: VictoriaLogs via Loki (vm)
+        uid: vm-logs-loki
+        type: loki
+        access: proxy
+        url: http://loki-vl-proxy.monitoring-vm.svc.cluster.local:3100
+        isDefault: false
+        editable: true

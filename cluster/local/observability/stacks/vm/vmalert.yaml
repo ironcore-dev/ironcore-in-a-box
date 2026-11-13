@@ -1,0 +1,42 @@
+# VMAlert: evaluates recording rules against the short-term VMSingle
+# and writes downsampled results to the long-term VMSingle.
+#
+# This is the retention-boundary migration pattern:
+#   * Short-term store (1d, 15s) is the only write target for vmagent
+#   * vmalert reads from short-term, evaluates 1m recording rules, and
+#     writes aggregated results to long-term (7d)
+#   * No dual-write overlap — long-term only contains rule outputs
+#   * vmselect merges both stores: 15s for recent, 1m for older data
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMAlert
+metadata:
+  name: vm
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/component: recording-rules
+    ironcore.dev/observability-stack: vm
+spec:
+  replicaCount: 1
+  # Read from short-term VMSingle
+  datasource:
+    url: http://vmsingle-vm.monitoring-vm.svc:8429
+  # Write recording rule results to long-term VMSingle
+  remoteWrite:
+    url: http://vmsingle-vm-longterm.monitoring-vm.svc:8429
+  # Read back historical rule state from long-term on restart
+  remoteRead:
+    url: http://vmsingle-vm-longterm.monitoring-vm.svc:8429
+  evaluationInterval: 1m
+  # Select VMRules with our stack label
+  ruleSelector:
+    matchLabels:
+      ironcore.dev/observability-stack: vm
+  ruleNamespaceSelector: {}
+  extraArgs:
+    loggerFormat: json
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi

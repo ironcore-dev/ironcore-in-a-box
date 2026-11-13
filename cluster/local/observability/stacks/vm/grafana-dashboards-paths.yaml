@@ -1,0 +1,186 @@
+# Provisioned dashboards: per-ingestion-path copies.
+#
+# One dashboard per pipeline, each showing the same three queries through
+# its own store + query language:
+#
+#   * "IronCore / Path: prom"  — prometheus-operated (prom-metrics),
+#     error log lines via Loki (prom-logs), LogQL.
+#   * "IronCore / Path: vm native"  — vm-metrics (vmselect over both
+#     VMSingle tiers) for metrics, vm-logs (VLSingle native) for logs,
+#     LogsQL with per-panel format pipes.
+#   * "IronCore / Path: vm via loki-proxy"  — vm-metrics for metrics
+#     (same store, native PromQL), vm-logs-loki (loki-vl-proxy) for
+#     logs, LogQL.
+#
+# Dashboards intentionally pin their datasource and use the label names
+# native to that pipeline (kubernetes_namespace_name on vl/containers,
+# no hop through label rewriting) so each copy is honest about what the
+# path sees.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-paths
+  namespace: monitoring-ui
+  labels:
+    ironcore.dev/observability-stack: vm
+data:
+  ironcore-path-prom.json: |
+    {
+      "title": "IronCore / Path: prom",
+      "uid": "ironcore-path-prom",
+      "tags": ["ironcore", "path", "prom"],
+      "timezone": "browser",
+      "schemaVersion": 41,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "description": "All panels bound to the prom stack: prometheus-operated for metrics (prom-metrics datasource), Loki for logs (prom-logs datasource, LogQL).",
+      "panels": [
+        {
+          "type": "stat", "title": "up targets",
+          "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+          "datasource": {"uid": "prom-metrics"},
+          "targets": [{"refId": "A", "expr": "sum(up{job=~\"monitoring-prom/.*\"})"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "green"}, "mappings": [{"type": "value", "options": {"0": {"color": "red", "text": "ALL DOWN"}}}]}, "overrides": []},
+          "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}}
+        },
+        {
+          "type": "timeseries", "title": "reconcile rate by controller (ops/s)",
+          "gridPos": {"x": 4, "y": 0, "w": 10, "h": 8},
+          "datasource": {"uid": "prom-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_total[$__rate_interval]))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "reconcile errors (ops/s)",
+          "gridPos": {"x": 14, "y": 0, "w": 10, "h": 8},
+          "datasource": {"uid": "prom-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_errors_total[$__rate_interval]))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "log volume /s by namespace (Loki)",
+          "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+          "datasource": {"uid": "prom-logs"},
+          "targets": [{"refId": "A", "expr": "sum by (kubernetes_namespace_name) (count_over_time({job=\"fluent-bit-prom\"}[$__interval]))", "legendFormat": "{{kubernetes_namespace_name}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        },
+        {
+          "type": "logs", "title": "error lines (LogQL)",
+          "gridPos": {"x": 0, "y": 16, "w": 24, "h": 14},
+          "datasource": {"uid": "prom-logs"},
+          "targets": [{"refId": "A", "expr": "{job=\"fluent-bit-prom\"} |~ \"(?i)error\""}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        }
+      ]
+    }
+  ironcore-path-vm-native.json: |
+    {
+      "title": "IronCore / Path: vm (native LogsQL)",
+      "uid": "ironcore-path-vm-native",
+      "tags": ["ironcore", "path", "vm", "logsql"],
+      "timezone": "browser",
+      "schemaVersion": 41,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "description": "All panels bound to the vm stack's VM-native query surfaces: vm-metrics (vmselect between the two VMSingle tiers; PromQL over the merged store) and vm-logs (VLSingle native LogsQL). Format pipe normalizes the line view: message first, structured fields trailing.",
+      "templating": {
+        "list": [
+          {
+            "name": "origin",
+            "type": "query",
+            "label": "Pipeline origin",
+            "datasource": {"uid": "vm-logs"},
+            "query": "label_values(_stream_source)",
+            "refresh": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {"selected": true, "text": ["fluent-bit-vm"], "value": ["fluent-bit-vm"]}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "stat", "title": "up targets",
+          "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum(up{source=\"vm\"})"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "green"}, "mappings": [{"type": "value", "options": {"0": {"color": "red", "text": "ALL DOWN"}}}]}, "overrides": []},
+          "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}}
+        },
+        {
+          "type": "timeseries", "title": "reconcile rate by controller (ops/s)",
+          "gridPos": {"x": 4, "y": 0, "w": 10, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_total{source=\"vm\"}[$__rate_interval]))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "reconcile errors (ops/s)",
+          "gridPos": {"x": 14, "y": 0, "w": 10, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_errors_total{source=\"vm\"}[$__rate_interval]))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "log volume /s by namespace (native LogsQL stats)",
+          "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "_stream_source:~\"$origin\" | stats by (kubernetes_namespace_name) count() as lines", "legendFormat": "{{kubernetes_namespace_name}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        },
+        {
+          "type": "logs", "title": "error lines (LogsQL format pipe)",
+          "gridPos": {"x": 0, "y": 16, "w": 24, "h": 14},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "_stream_source:~\"$origin\" AND error | format \"<_msg> | <caller>\" as _msg"}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        }
+      ]
+    }
+  ironcore-path-vm-loki.json: |
+    {
+      "title": "IronCore / Path: vm (Loki via proxy)",
+      "uid": "ironcore-path-vm-loki",
+      "tags": ["ironcore", "path", "vm", "loki"],
+      "timezone": "browser",
+      "schemaVersion": 41,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "description": "Same store as 'Path: vm (native)' — but queried through loki-vl-proxy with LogQL. Metrics from vm-metrics (PromQL over VMSingle tiers, identical numbers); logs via Grafana's native Loki datasource translating to VLSingle.",
+      "panels": [
+        {
+          "type": "stat", "title": "up targets",
+          "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum(up{source=\"vm\"})"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "green"}, "mappings": [{"type": "value", "options": {"0": {"color": "red", "text": "ALL DOWN"}}}]}, "overrides": []},
+          "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}}
+        },
+        {
+          "type": "timeseries", "title": "reconcile rate by controller (ops/s)",
+          "gridPos": {"x": 4, "y": 0, "w": 10, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_total{source=\"vm\"}[$__rate_interval]))", "legendFormat": "{{controller}}"}], "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "reconcile errors (ops/s)",
+          "gridPos": {"x": 14, "y": 0, "w": 10, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_errors_total{source=\"vm\"}[$__rate_interval]))", "legendFormat": "{{controller}}"}], "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "log volume /s by namespace (Loki over VL)",
+          "gridPos": {"x": 0, "y": 8, "w": 24, "h": 8},
+          "datasource": {"uid": "vm-logs-loki"},
+          "targets": [{"refId": "A", "expr": "sum by (kubernetes_namespace_name) (count_over_time({job=\"fluent-bit-vm\"}[$__interval]))", "legendFormat": "{{kubernetes_namespace_name}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        },
+        {
+          "type": "logs", "title": "error lines (LogQL line filter)",
+          "gridPos": {"x": 0, "y": 16, "w": 24, "h": 14},
+          "datasource": {"uid": "vm-logs-loki"},
+          "targets": [{"refId": "A", "expr": "{job=\"fluent-bit-vm\"} |~ \"(?i)error\""}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        }
+      ]
+    }

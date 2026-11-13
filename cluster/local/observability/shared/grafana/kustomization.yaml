@@ -1,0 +1,18 @@
+# Grafana as a shared read tool for the three parallel observability stacks.
+# Deploys into `monitoring-ui`. Datasource ConfigMap starts empty; each
+# stack adds its datasources when it comes online.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+  - service.yaml
+
+configMapGenerator:
+  - name: grafana-dashboard-providers
+    namespace: monitoring-ui
+    files:
+      - dashboards.yaml=dashboard-provider.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true

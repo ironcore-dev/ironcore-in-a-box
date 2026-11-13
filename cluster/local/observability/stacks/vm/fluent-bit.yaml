@@ -1,0 +1,200 @@
+# fluent-bit for the `vm` stack: DaemonSet + ConfigMap.
+#
+# One instance per node, reads container logs from kind's containerd log
+# directory (/var/log/containers/*.log), enriches with Kubernetes pod +
+# namespace metadata, and pushes to VictoriaLogs via its Loki-compatible
+# ingest endpoint.
+#
+# Every log record is tagged with a synthetic label `_stream_source=fluent-bit-vm`
+# so that once the otel stack starts pushing its own logs into the same
+# VictoriaLogs instance (via OTLP), the two streams remain distinguishable
+# in LogsQL queries.
+#
+# fluent-bit's own logs are emitted as JSON (see [SERVICE] Log_Format json).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Log_Level     info
+        Log_Format    json
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+        Parsers_File  parsers.conf
+
+    [INPUT]
+        Name              tail
+        Tag               kube.*
+        Path              /var/log/containers/*.log
+        Parser            cri
+        DB                /flb-state/flb-kube.db
+        Mem_Buf_Limit     10MB
+        Skip_Long_Lines   On
+        Refresh_Interval  5
+        Read_from_Head    On
+
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_Tag_Prefix     kube.var.log.containers.
+        Merge_Log           Off
+        K8S-Logging.Parser  Off
+        K8S-Logging.Exclude Off
+        Annotations         Off
+        Labels              Off
+
+    [FILTER]
+        Name          parser
+        Match         kube.*
+        Key_Name      log
+        Parser        json_ts
+        Reserve_Data  On
+        Preserve_Key  On
+
+    [FILTER]
+        Name          parser
+        Match         kube.*
+        Key_Name      log
+        Parser        logfmt_time
+        Reserve_Data  On
+        Preserve_Key  On
+
+    # Preserve_Key On in both parsers is deliberate: the logfmt parser
+    # "succeeds" on ANY space-separated line (e.g. klog `E0824 10:06:…`)
+    # and would otherwise splatter garbage key:true fields while DELETING
+    # the original message. Keeping `log`, then renaming to _msg below,
+    # guarantees every record keeps a readable message — garbage fields
+    # from misparsed lines are tolerable, lost messages are not.
+    [FILTER]
+        Name    modify
+        Match   *
+        Add     _stream_source fluent-bit-vm
+        Rename  msg _msg
+        Rename  log _msg
+
+    [OUTPUT]
+        Name             loki
+        Match            *
+        Host             vlsingle-vlogs.monitoring-vm.svc.cluster.local
+        Port             9428
+        Uri              /insert/loki/api/v1/push
+        Labels           job=fluent-bit-vm, _stream_source=fluent-bit-vm
+        Label_Keys       $stream, $kubernetes['namespace_name'], $kubernetes['pod_name'], $kubernetes['container_name']
+        Auto_Kubernetes_Labels off
+        Line_Format      json
+
+    # Single OUTPUT — one VLSingle store (7d retention). No longterm
+    # tier for logs: there is no aggregation to apply at a retention
+    # boundary, so dual-write would duplicate storage with zero benefit.
+
+  parsers.conf: |
+    # cri parser: kind uses containerd, so container logs have the format:
+    #   2026-08-21T12:34:56.789012345Z stdout F {actual log line}
+    [PARSER]
+        Name        cri
+        Format      regex
+        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[FP]) (?<log>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
+    # JSON parser with Time_Key: extracts 'ts' as the record timestamp.
+    # Covers zap JSON logs: {"level":"info","ts":"2026-08-21T13:04:31Z",...}
+    # Time_Strict Off: matches with or without fractional seconds.
+    [PARSER]
+        Name        json_ts
+        Format      json
+        Time_Key    ts
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+        Time_Keep   Off
+        Time_Strict Off
+
+    # logfmt parser with Time_Key: extracts 'time' as the record timestamp.
+    # Covers logrus text format: time="2026-08-21T13:04:24Z" level=info msg="..."
+    [PARSER]
+        Name        logfmt_time
+        Format      logfmt
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+        Time_Keep   Off
+        Time_Strict Off
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/name: fluent-bit
+    app.kubernetes.io/component: log-shipper
+    ironcore.dev/observability-stack: vm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fluent-bit
+      ironcore.dev/observability-stack: vm
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fluent-bit
+        ironcore.dev/observability-stack: vm
+    spec:
+      serviceAccountName: fluent-bit
+      terminationGracePeriodSeconds: 10
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: fluent-bit
+          image: fluent/fluent-bit:3.2.10
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          ports:
+            - name: http
+              containerPort: 2020
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: config
+              mountPath: /fluent-bit/etc/
+              readOnly: true
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: varlibcontainerd
+              mountPath: /var/lib/containerd
+              readOnly: true
+            # Writable state directory for the tail input plugin's SQLite
+            # DB (tracks read positions across restarts). Ephemeral — on
+            # pod restart fluent-bit re-reads from the current position
+            # in each log file, so some log lines may be missed on restart
+            # but there's no persistent state to worry about.
+            - name: state
+              mountPath: /flb-state
+      volumes:
+        - name: config
+          configMap:
+            name: fluent-bit-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibcontainerd
+          hostPath:
+            path: /var/lib/containerd
+        - name: state
+          emptyDir: {}

@@ -31,3 +31,4 @@ cp -r "$repo_root/cluster" "$config_dir/cluster"
 
 # Run all mutate scripts (each is a no-op if its env vars aren't set)
 "$repo_root/hack/mutate-libvirt-provider.sh" "$config_dir"
+"$repo_root/hack/mutate-log-format.sh" "$config_dir"

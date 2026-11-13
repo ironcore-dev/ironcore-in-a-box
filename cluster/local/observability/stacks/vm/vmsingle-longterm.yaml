@@ -1,0 +1,35 @@
+# VMSingle long-term tier: 7-day retention.
+#
+# Receives pre-aggregated (downsampled) metrics from vmagent's streaming
+# aggregation. Raw 15s samples go to the short-term VMSingle (1d);
+# 1-minute aggregates go here for longer retention without the storage
+# cost of full-resolution data.
+#
+# This is the open-source substitute for VM Enterprise's downsampling
+# feature: vmagent does streaming aggregation at write-time, reducing
+# cardinality before it hits the long-term store.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMSingle
+metadata:
+  name: vm-longterm
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/component: metrics-store-longterm
+    ironcore.dev/observability-stack: vm
+spec:
+  retentionPeriod: 7d
+  extraArgs:
+    loggerFormat: json
+    vmselectAddr: ":8401"
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi

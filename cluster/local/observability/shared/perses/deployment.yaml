@@ -1,0 +1,110 @@
+# Perses: alternative visualization alongside Grafana (perses.dev).
+# Both UIs read the same per-stack datasources so they can be compared
+# head-to-head (Experiment A candidates).
+#
+# Like Grafana's projected datasource volume, each stack contributes a
+# perses-datasources-<stack> ConfigMap with GlobalDatasource YAMLs; Perses'
+# provisioning folder picks them up. ConfigMaps are optional, so dropping a
+# stack removes its datasources here automatically.
+#
+# Datasources use Perses' built-in server-side proxy (kind: HTTPProxy),
+# never directUrl: the stack services are ClusterIP and browsers cannot
+# reach them.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: perses
+  namespace: monitoring-ui
+  labels:
+    app.kubernetes.io/name: perses
+    app.kubernetes.io/component: read-tool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: perses
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: perses
+    spec:
+      containers:
+        - name: perses
+          image: persesdev/perses:v0.54.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            # file-as-database backend; emptyDir is fine for this testbed
+            - name: PERSES_DATABASE_FILE_FOLDER
+              value: /perses
+            - name: PERSES_DATABASE_FILE_EXTENSION
+              value: yaml
+            # provisioning folder 0; the projected volume below lands each
+            # stack's GlobalDatasource YAMLs there. Provisioning re-injects
+            # periodically, so these can't be edited away in the UI.
+            - name: PERSES_PROVISIONING_FOLDERS_0
+              value: /etc/perses/provisioning
+            - name: PERSES_PROVISIONING_INTERVAL
+              value: 1m
+            # Watch the folder so ConfigMap updates land near-instantly
+            # instead of waiting for the reconcile interval.
+            - name: PERSES_PROVISIONING_ENABLE_WATCH
+              value: "true"
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/perses/provisioning
+              readOnly: true
+            - name: db
+              mountPath: /perses
+      volumes:
+        # Projected volume merging every stack's perses-datasources
+        # ConfigMap into the provisioning folder (same pattern as the
+        # Grafana deployment's datasource volume).
+        - name: datasources
+          projected:
+            sources:
+              - configMap:
+                  name: perses-datasources-vm
+                  optional: true
+              - configMap:
+                  name: perses-datasources-prom
+                  optional: true
+              - configMap:
+                  name: perses-datasources-otel
+                  optional: true
+              - configMap:
+                  name: perses-dashboards-vm
+                  optional: true
+              - configMap:
+                  name: perses-dashboards-prom
+                  optional: true
+              - configMap:
+                  name: perses-dashboards-otel
+                  optional: true
+        - name: db
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: perses
+  namespace: monitoring-ui
+  labels:
+    app.kubernetes.io/name: perses
+    app.kubernetes.io/component: read-tool
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: perses
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

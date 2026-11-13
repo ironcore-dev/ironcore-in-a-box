@@ -1,0 +1,40 @@
+# RBAC for the fluent-bit DaemonSet in the `vm` stack.
+#
+# fluent-bit needs:
+#   * Its own ServiceAccount in monitoring-vm.
+#   * Read on pods, namespaces (for kubernetes-metadata enrichment — attaching
+#     pod/namespace labels to each log record via the `kubernetes` filter).
+#   * Node-local /var/log filesystem access is a hostPath mount, not RBAC.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluent-bit-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluent-bit-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fluent-bit-vm
+subjects:
+  - kind: ServiceAccount
+    name: fluent-bit
+    namespace: monitoring-vm

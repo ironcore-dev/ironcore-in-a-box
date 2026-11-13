@@ -1,0 +1,56 @@
+# Storage scrapes for the `vm` stack (optional, requires `make up-storage`).
+#
+# - ceph-volume-provider: controller-runtime component; HTTPS :8080 with
+#   SA-token auth (same shape as the other instrumented controllers).
+# - rook-ceph-mgr: the Ceph mgr's prometheus module, plain HTTP :9283.
+#
+# Rook's own `spec.monitoring.enabled` toggle stays off: it would create a
+# prometheus-operator ServiceMonitor which exists only so prom can consume
+# it — it would break parity with vm/otel. Scraping the mgr pods directly
+# keeps all three stacks symmetric.
+#
+# With storage not deployed these scrapes simply match no pods.
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: ceph-volume-provider-8080
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+spec:
+  namespaceSelector:
+    matchNames:
+      - rook-ceph
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  podMetricsEndpoints:
+    - targetPort: 8080
+      scheme: https
+      path: /metrics
+      interval: 15s
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tlsConfig:
+        insecureSkipVerify: true
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: rook-ceph-mgr-9283
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+spec:
+  namespaceSelector:
+    matchNames:
+      - rook-ceph
+  selector:
+    matchLabels:
+      app: rook-ceph-mgr
+      ceph_daemon_type: mgr
+  podMetricsEndpoints:
+    - targetPort: 9283
+      scheme: http
+      path: /metrics
+      interval: 15s

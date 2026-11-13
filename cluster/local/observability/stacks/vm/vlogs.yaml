@@ -1,0 +1,44 @@
+# VLSingle: single-node VictoriaLogs store for the `vm` stack.
+#
+# Retention: 7d. Single log store — no two-tier split, because logs don't
+# benefit from downsampling the way metrics do (a log line is a log line
+# regardless of age). A "short-term" log store with a separate "long-term"
+# instance receiving the same data via dual-write or migration adds no
+# value: same data, same query characteristics, just 2x storage and write
+# amplification.
+#
+# Unlike metrics — where vmalert recording rules genuinely transform data
+# (15s → 1m reduces cardinality and storage) — logs have no aggregation
+# function to apply at a retention boundary. The only reason for two log
+# stores would be different retention *per log level* (e.g., errors 30d,
+# info 7d), which is orthogonal to tiering.
+#
+# Ingest endpoints exposed by VLSingle (via its Service):
+#   - Native JSON stream:     POST /insert/jsonline
+#   - Loki push:              POST /insert/loki/api/v1/push
+#   - Elasticsearch bulk:     POST /insert/elasticsearch/_bulk
+#   - OTLP:                   POST /insert/opentelemetry/v1/logs
+apiVersion: operator.victoriametrics.com/v1
+kind: VLSingle
+metadata:
+  name: vlogs
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/component: logs-store
+    ironcore.dev/observability-stack: vm
+spec:
+  retentionPeriod: 7d
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      # VL self-limits caches to 60% of cgroup memory and opens every small
+      # part at startup; fluent-bit ingests everything including Ceph OSD's
+      # rocksdb debug logs (each carrying thousands of unique field names),
+      # driving memory far above 1Gi. 2Gi for this testbed; a real deploy
+      # would filter those source streams instead of scaling up.
+      memory: 2Gi
+  # Emit VictoriaLogs' own logs as JSON.
+  logFormat: json

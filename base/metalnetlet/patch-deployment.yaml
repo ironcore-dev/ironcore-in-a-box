@@ -9,3 +9,7 @@ spec:
       containers:
         - name: manager
           imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 8443
+              protocol: TCP

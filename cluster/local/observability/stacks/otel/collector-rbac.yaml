@@ -1,0 +1,101 @@
+# RBAC for the OTel Collector.
+#
+# Needs cluster-wide pod discovery (for prometheus receiver's k8s_sd)
+# plus the per-component metrics-reader ClusterRoles for bearer-token auth.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: monitoring-otel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector-discovery
+rules:
+  - apiGroups: [""]
+    resources: [nodes, services, endpoints, pods, namespaces]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - nonResourceURLs: [/metrics]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-discovery
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otel-collector-discovery
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: monitoring-otel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-ironcore-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ironcore-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: monitoring-otel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-ironcore-net-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ironcore-net-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: monitoring-otel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-apinetlet-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: apinetlet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: monitoring-otel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-metalnet-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metalnet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: monitoring-otel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector-metalnetlet-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metalnetlet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: monitoring-otel

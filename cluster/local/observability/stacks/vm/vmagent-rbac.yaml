@@ -1,0 +1,175 @@
+# RBAC for the vmagent in the `vm` stack.
+#
+# vmagent needs:
+#   1. Its own ServiceAccount in monitoring-vm.
+#   2. Namespace-local Role granting read access to Secrets so the
+#      config-reloader init container can read vmagent-vm's own scrape
+#      config Secret (which the operator creates and updates).
+#   3. ClusterRoleBindings to each IronCore component's metrics-reader
+#      ClusterRole so it can authenticate to /metrics endpoints that
+#      controller-runtime v0.15+ ships with authn/authz enabled by default.
+#   4. Cluster-wide read on Nodes, Endpoints, Pods, Services (Kubernetes
+#      service discovery for scrape targets). The VM operator provides a
+#      `vmagent` ClusterRole that covers this; we bind our SA to it.
+#
+# The metrics-reader ClusterRoles were created by iiab's per-component
+# `make <component>` targets; we do not create them here.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vmagent
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+---
+# Role for config-reloader's secret read (its scrape config Secret).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vmagent-config-reader
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vmagent-config-reader
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vmagent-config-reader
+subjects:
+  - kind: ServiceAccount
+    name: vmagent
+    namespace: monitoring-vm
+---
+# One ClusterRoleBinding per IronCore component's metrics-reader.
+# Kept as separate objects (not a single aggregated CR) so each binding is
+# individually auditable and each iiab component's authorization surface is
+# explicit in this file.
+
+# Cluster-wide scrape-target discovery permissions. Normally the VM operator
+# creates a ClusterRole named `vmagent` when it manages the ServiceAccount
+# itself; we manage the SA (to bind the IronCore metrics-reader roles), so
+# we also provide the discovery ClusterRole ourselves.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vmagent-vm-discovery
+  labels:
+    ironcore.dev/observability-stack: vm
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - nodes/proxy
+      - services
+      - endpoints
+      - pods
+      - endpointslices
+      - namespaces
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vmagent-vm-discovery
+  labels:
+    ironcore.dev/observability-stack: vm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vmagent-vm-discovery
+subjects:
+  - kind: ServiceAccount
+    name: vmagent
+    namespace: monitoring-vm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vmagent-ironcore-metrics-reader
+  labels:
+    ironcore.dev/observability-stack: vm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ironcore-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: vmagent
+    namespace: monitoring-vm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vmagent-ironcore-net-metrics-reader
+  labels:
+    ironcore.dev/observability-stack: vm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ironcore-net-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: vmagent
+    namespace: monitoring-vm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vmagent-apinetlet-metrics-reader
+  labels:
+    ironcore.dev/observability-stack: vm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: apinetlet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: vmagent
+    namespace: monitoring-vm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vmagent-metalnet-metrics-reader
+  labels:
+    ironcore.dev/observability-stack: vm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metalnet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: vmagent
+    namespace: monitoring-vm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vmagent-metalnetlet-metrics-reader
+  labels:
+    ironcore.dev/observability-stack: vm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metalnetlet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: vmagent
+    namespace: monitoring-vm

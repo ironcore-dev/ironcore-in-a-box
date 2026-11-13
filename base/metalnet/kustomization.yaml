@@ -17,3 +17,4 @@ patches:
       kind: DaemonSet
       namespace: metalnet-system
       name: metalnet-controller-manager
+  - path: patch-manager-metrics-port.yaml

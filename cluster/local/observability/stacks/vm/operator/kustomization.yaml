@@ -1,0 +1,10 @@
+# VictoriaMetrics operator, no-webhook variant (simpler; no cert-manager dep).
+# Upstream manifest self-namespaces into `vm`. We keep that namespace as-is
+# rather than rewriting, because `vm` is not a stack namespace and this
+# keeps the operator's own lifecycle separate from the `monitoring-vm`
+# stack's data-plane resources (VMSingle, VMAgent, VictoriaLogs).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/VictoriaMetrics/operator/releases/download/v0.74.1/install-no-webhook.yaml

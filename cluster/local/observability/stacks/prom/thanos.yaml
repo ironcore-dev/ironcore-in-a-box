@@ -1,0 +1,320 @@
+# Thanos long-term storage for the prom stack.
+#
+# Prometheus-sidecar uploads its TSDB blocks every 2h into MinIO. A
+# thanos-compactor creates downsampled variants (5m, 1h resolution) inside
+# MinIO; a thanos-store-gateway exposes the blocks at query time over
+# the Thanos StoreAPI; thanos-query merges live (via the sidecar) and
+# history (via the store-gateway) using the same StoreAPI.
+# Grafana's prom-metrics data source points at the querier instead of the
+# Prometheus service for short+long-term alike.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-store
+  namespace: monitoring-prom
+  labels:
+    app.kubernetes.io/name: thanos-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: thanos-store
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: thanos-store
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: thanos-store
+          image: quay.io/thanos/thanos:v0.37.2
+          args:
+            - store
+            - --data-dir=/data
+            - --objstore.config-file=/etc/thanos/objstore.yml
+          ports:
+            - name: http
+              containerPort: 10902
+            - name: grpc
+              containerPort: 10901
+          env:
+            - name: THANOS_LOG_FORMAT
+              value: json
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/thanos
+              readOnly: true
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: config
+          secret:
+            secretName: thanos-objectstore
+        - name: data
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-compactor
+  namespace: monitoring-prom
+  labels:
+    app.kubernetes.io/name: thanos-compactor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: thanos-compactor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: thanos-compactor
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: thanos-compactor
+          image: quay.io/thanos/thanos:v0.37.2
+          args:
+            - compact
+            - --data-dir=/data
+            - --objstore.config-file=/etc/thanos/objstore.yml
+            # Thanos enforces: 5m retention >= 10d (downsampling floor).
+            # For a kind testbed, all three at 10d still samples everything.
+            - --retention.resolution-raw=10d
+            - --retention.resolution-5m=10d
+            - --retention.resolution-1h=10d
+            # Without --wait the compactor runs one cycle and exits.
+            - --wait
+          env:
+            - name: THANOS_LOG_FORMAT
+              value: json
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/thanos
+              readOnly: true
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: config
+          secret:
+            secretName: thanos-objectstore
+        - name: data
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thanos-query
+  namespace: monitoring-prom
+  labels:
+    app.kubernetes.io/name: thanos-query
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: thanos-query
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: thanos-query
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: thanos-query
+          image: quay.io/thanos/thanos:v0.37.2
+          args:
+            - query
+            - --http-address=0.0.0.0:10902
+            - --grpc-address=0.0.0.0:10901
+            - --query.auto-downsampling
+            # sidecar (live, short-term) and store-gateway (long-term)
+            - --endpoint=dnssrv+_grpc._tcp.thanos-sidecar.monitoring-prom.svc
+            - --endpoint=dnssrv+_grpc._tcp.thanos-store.monitoring-prom.svc
+          ports:
+            - name: http
+              containerPort: 10902
+            - name: grpc
+              containerPort: 10901
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-query
+  namespace: monitoring-prom
+spec:
+  ports:
+    - name: http
+      port: 10902
+      targetPort: http
+    - name: grpc
+      port: 10901
+      targetPort: grpc
+  selector:
+    app.kubernetes.io/name: thanos-query
+---
+# headless services so thanos-query's dnssrv+ endpoint discovery works
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-store
+  namespace: monitoring-prom
+spec:
+  clusterIP: None
+  ports:
+    - name: grpc
+      port: 10901
+      targetPort: grpc
+  selector:
+    app.kubernetes.io/name: thanos-store
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-sidecar
+  namespace: monitoring-prom
+spec:
+  clusterIP: None
+  ports:
+    - name: grpc
+      port: 10901
+      targetPort: grpc
+  selector:
+    app.kubernetes.io/name: prometheus
+---
+# Secret for the object store config
+apiVersion: v1
+kind: Secret
+metadata:
+  name: thanos-objectstore
+  namespace: monitoring-prom
+type: Opaque
+stringData:
+  objstore.yml: |
+    type: S3
+    config:
+      bucket: thanos
+      endpoint: minio.monitoring-prom.svc.cluster.local:9000
+      access_key: thanosadmin
+      secret_key: thanosadmin
+      region: ""
+      signature_version2: false
+      insecure: true
+      http_config:
+        insecure_skip_verify: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: monitoring-prom
+  labels:
+    app.kubernetes.io/name: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: minio
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: minio
+          # Timestamped tags rotated off the quay mirror; floating tag is the
+          # only reliable one without a registry probe. Pin before staging.
+          image: quay.io/minio/minio:latest
+          args: ["server", "/data"]
+          env:
+            - name: MINIO_ROOT_USER
+              value: thanosadmin
+            - name: MINIO_ROOT_PASSWORD
+              value: thanosadmin
+          ports:
+            - name: api
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          resources:
+            requests:
+              cpu: 20m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: monitoring-prom
+spec:
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+    - name: console
+      port: 9001
+      targetPort: console
+  selector:
+    app.kubernetes.io/name: minio
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-init
+  namespace: monitoring-prom
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: quay.io/minio/mc:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              mc alias set local http://minio.monitoring-prom.svc:9000 thanosadmin thanosadmin &&
+              mc mb -p local/thanos 2>/dev/null || true
+              mc ls local/thanos

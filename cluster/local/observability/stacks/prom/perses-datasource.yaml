@@ -1,0 +1,78 @@
+# Perses GlobalDatasources for the prom stack.
+#
+# Analogue of grafana-datasource.yaml: prom contributes its datasources for
+# the shared Perses instance (monitoring-ui). Merged via projected volume;
+# dropping the prom stack removes these automatically.
+#
+# Server-side proxy (HTTPProxy) — services are ClusterIP, browsers cannot
+# reach them directly.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: perses-datasources-prom
+  namespace: monitoring-ui
+  labels:
+    ironcore.dev/observability-stack: prom
+data:
+  prom-metrics.yaml: |
+    kind: GlobalDatasource
+    metadata:
+      name: prom-metrics
+    spec:
+      display:
+        name: Prometheus (prom)
+      default: true
+      plugin:
+        kind: PrometheusDatasource
+        spec:
+          proxy:
+            kind: HTTPProxy
+            spec:
+              # thanos-query: fans out to both tiers (short-term sidecar +
+              # long-term store-gateway)
+              url: http://thanos-query.monitoring-prom.svc.cluster.local:10902
+              allowedEndpoints:
+                - method: POST
+                  endpointPattern: /api/v1/query
+                - method: POST
+                  endpointPattern: /api/v1/query_range
+                - method: POST
+                  endpointPattern: /api/v1/series
+                - method: POST
+                  endpointPattern: /api/v1/labels
+                - method: GET
+                  endpointPattern: /api/v1/metadata
+                - method: GET
+                  endpointPattern: /api/v1/label/([a-zA-Z0-9_-]+)/values
+  prom-logs.yaml: |
+    kind: GlobalDatasource
+    metadata:
+      name: prom-logs
+    spec:
+      display:
+        name: Loki (prom)
+      default: false
+      plugin:
+        kind: LokiDatasource
+        spec:
+          proxy:
+            kind: HTTPProxy
+            spec:
+              url: http://loki.monitoring-prom.svc.cluster.local:3100
+              allowedEndpoints:
+                - method: GET
+                  endpointPattern: /loki/api/v1/query
+                - method: GET
+                  endpointPattern: /loki/api/v1/query_range
+                - method: GET
+                  endpointPattern: /loki/api/v1/series
+                - method: GET
+                  endpointPattern: /loki/api/v1/labels
+                - method: GET
+                  endpointPattern: /loki/api/v1/label/([a-zA-Z0-9_-]+)/values
+                - method: GET
+                  endpointPattern: /loki/api/v1/index/stats
+                - method: GET
+                  endpointPattern: /loki/api/v1/index/volume
+                - method: GET
+                  endpointPattern: /loki/api/v1/index/volume_range

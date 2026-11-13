@@ -1,0 +1,19 @@
+# `otel` stack: OTel Collector → vm stores
+# Namespace: monitoring-otel
+#
+# Role in the comparison: test OTel Collector as a unified collector
+# (both metrics and logs in one process). Writes to the vm stack's stores
+# (VMSingle + VLSingle) with source=otel label so all three collector
+# approaches are visible in the same Grafana datasources.
+#
+# No separate Grafana datasource needed — query the existing vm-metrics
+# and vm-logs datasources with {source="otel"} or
+# {_stream_source="otel-collector"} filters.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - operator
+  - collector.yaml
+  - collector-rbac.yaml

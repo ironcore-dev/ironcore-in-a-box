@@ -1,0 +1,36 @@
+# VMSingle: single-node VictoriaMetrics store for the `vm` stack.
+#
+# Retention: 1d. VictoriaMetrics enforces a 1-day minimum retention at the
+# store level (see `-retentionPeriod cannot be smaller than a day` fatal
+# check in vmstorage). We wanted 1h for the short-term tier but the store
+# won't allow it, so 1d is the practical floor.
+#
+# Long-term retention (~1 week @ full or downsampled resolution) will be a
+# separate VMSingle or VMCluster that receives streaming-aggregated samples
+# from vmagent's second remote_write target — Experiment B's downsampling-
+# substitute test; not yet implemented.
+#
+# Storage: emptyDir (default when `storage` is unset). Local iiab kind
+# cluster, disposable data — no need for a PVC.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMSingle
+metadata:
+  name: vm
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/component: metrics-store
+    ironcore.dev/observability-stack: vm
+spec:
+  retentionPeriod: 1d
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  # Emit VMSingle's own logs as JSON so the observability stack's control
+  # plane is IEP-#60-compliant too.
+  extraArgs:
+    loggerFormat: json
+    vmselectAddr: ":8401"

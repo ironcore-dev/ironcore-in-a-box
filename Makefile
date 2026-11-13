@@ -187,6 +187,31 @@ remove-libvirt-provider: guard-cluster kubectl ## Remove libvirt-provider
 unprepare: guard-cluster kubectl ## Unprepare the environment
 	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/prepare --ignore-not-found=true
 
+##@ Observability (opt-in)
+
+# The observability overlay is intentionally NOT chained into `up`. It applies
+# the parallel prom / vm / otel stacks on top of a running iiab cluster so
+# their collectors, stores, and shippers can be compared side-by-side under
+# the same iiab workload. See cluster/local/observability/README.md.
+#
+# `IRONCORE_LOG_FORMAT=json` is exported before prepare-local-config so
+# hack/mutate-log-format.sh flips all controller-runtime components to zap
+# JSON output for machine-parseable structured logs (IEP-#60 compliant).
+# Without observability, iiab keeps human-readable console-mode logs.
+
+observability: export IRONCORE_LOG_FORMAT = json
+observability: prepare-local-config guard-cluster kubectl ## Install the observability overlay (parallel prom+vm+otel stacks) and switch components to JSON logs
+	$(KUBECTL_CTX) apply --server-side --force-conflicts -k .tmp/config/cluster/local/observability
+	# Re-apply iiab component overlays so the mutate-log-format script's
+	# --zap-encoder=json patch takes effect on already-running components.
+	for c in metalnet libvirt-provider ironcore ironcore-net apinetlet metalnetlet; do \
+		$(KUBECTL_CTX) apply --server-side --force-conflicts \
+			-k .tmp/config/cluster/local/$$c ; \
+	done
+
+remove-observability: guard-cluster kubectl ## Remove the observability overlay (does NOT revert log format)
+	$(KUBECTL_CTX) delete -k .tmp/config/cluster/local/observability --ignore-not-found=true
+
 ##@ Dependencies
 
 ## Location to install dependencies to

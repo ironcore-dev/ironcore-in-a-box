@@ -1,0 +1,18 @@
+# The prometheus-operator upstream `bundle.yaml` deploys into the `default`
+# namespace (no Namespace resource is included; the Deployment targets
+# `default`). This kustomization overlays a namespace transform so the
+# operator lives alongside its `Prometheus`/`ServiceMonitor` instances in
+# `monitoring-prom` (see ../namespace.yaml).
+#
+# Note the resulting asymmetry with the other two operators: vm-op and
+# otel-op self-namespace via their own Namespace resources; only prom-op
+# gets rewritten here.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://github.com/prometheus-operator/prometheus-operator/releases/download/v0.93.1/bundle.yaml
+
+# Rewrite every namespaced resource in the bundle to `monitoring-prom`.
+# Kustomize is namespace-aware and rewrites RoleBinding subjects too.
+namespace: monitoring-prom

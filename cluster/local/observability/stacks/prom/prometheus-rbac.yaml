@@ -1,0 +1,119 @@
+# RBAC for the Prometheus instance.
+#
+# The Prometheus CR creates a StatefulSet whose pods use this SA.
+# It needs cluster-wide read access for pod discovery + the per-component
+# metrics-reader ClusterRoles for bearer-token scraping.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-prom
+  namespace: monitoring-prom
+---
+# Long-lived SA token for Prometheus to use when scraping metrics endpoints.
+# The kubernetes.io/service-account.name annotation causes the token controller
+# to populate .data.token automatically.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-prom-token
+  namespace: monitoring-prom
+  annotations:
+    kubernetes.io/service-account.name: prometheus-prom
+type: kubernetes.io/service-account-token
+---
+# Discovery: nodes, services, endpoints, pods, namespaces
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-prom-discovery
+rules:
+  - apiGroups: [""]
+    resources: [nodes, nodes/metrics, services, endpoints, pods, namespaces]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses]
+    verbs: [get, list, watch]
+  - nonResourceURLs: [/metrics]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-prom-discovery
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-prom-discovery
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-prom
+    namespace: monitoring-prom
+---
+# Bind to existing per-component metrics-reader ClusterRoles
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-prom-ironcore-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ironcore-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-prom
+    namespace: monitoring-prom
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-prom-ironcore-net-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ironcore-net-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-prom
+    namespace: monitoring-prom
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-prom-apinetlet-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: apinetlet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-prom
+    namespace: monitoring-prom
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-prom-metalnet-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metalnet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-prom
+    namespace: monitoring-prom
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-prom-metalnetlet-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: metalnetlet-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-prom
+    namespace: monitoring-prom

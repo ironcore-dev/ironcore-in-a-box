@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: ironcore-system
+  name: ironcore-controller-manager
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          ports:
+            - name: metrics
+              containerPort: 8443
+              protocol: TCP

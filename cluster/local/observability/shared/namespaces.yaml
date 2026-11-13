@@ -1,0 +1,9 @@
+# Shared read-tool namespace. Per-stack collector/store namespaces live
+# next to their stacks (stacks/*/namespace.yaml) so each stack commit is
+# self-contained and droppable.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring-ui
+  labels:
+    ironcore.dev/observability-role: read-tool

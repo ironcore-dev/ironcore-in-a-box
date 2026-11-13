@@ -1,0 +1,116 @@
+# Grafana OSS as the read tool for Experiment B.
+#
+# LICENSING NOTE: Grafana is AGPL-3.0. This deployment is intentionally
+# local-only (kind, no external network exposure). The proposal treats the
+# AGPL question as separate from this experimental scaffold. If SAP legal
+# clears AGPL for internal use, Grafana can be retained; otherwise this
+# stack is replaced with Perses when a mature-enough alternative for
+# Experiment A is available.
+#
+# NOT evaluated for UI/UX in Experiment B \u2014 Grafana is deployed purely as
+# a query-and-visualization surface to read results out of the three
+# parallel stacks. UI/UX evaluation is Experiment A on a real IronCore
+# cluster.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring-ui
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: read-tool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana-oss:12.4.3
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: Viewer
+            - name: GF_ANALYTICS_REPORTING_ENABLED
+              value: "false"
+            - name: GF_ANALYTICS_CHECK_FOR_UPDATES
+              value: "false"
+            - name: GF_INSTALL_PLUGINS
+              value: victoriametrics-logs-datasource
+            - name: GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS
+              value: victoriametrics-logs-datasource
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: dashboard-providers
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+              readOnly: true
+      volumes:
+        # Projected volume: merges datasource YAMLs from every observability
+        # stack's per-stack ConfigMap into a single directory that Grafana's
+        # provisioner reads at startup. Each ConfigMap is optional so
+        # Grafana starts even if a stack isn't installed yet; missing
+        # ConfigMaps simply contribute nothing to the merged directory.
+        - name: datasources
+          projected:
+            sources:
+              - configMap:
+                  name: grafana-datasources-vm
+                  optional: true
+              - configMap:
+                  name: grafana-datasources-prom
+                  optional: true
+              - configMap:
+                  name: grafana-datasources-otel
+                  optional: true
+        # Dashboard provider config: single static provider (this stack owns
+        # the provider; each observability stack contributes dashboard JSONs
+        # via the projected volume below).
+        - name: dashboard-providers
+          configMap:
+            name: grafana-dashboard-providers
+            optional: true
+        # Projected dashboard volume: same merge pattern as datasources.
+        - name: dashboards
+          projected:
+            sources:
+              - configMap:
+                  name: grafana-dashboards-vm
+                  optional: true
+              - configMap:
+                  name: grafana-dashboards-prom
+                  optional: true
+              - configMap:
+                  name: grafana-dashboards-otel
+                  optional: true
+              - configMap:
+                  name: grafana-dashboards-paths
+                  optional: true

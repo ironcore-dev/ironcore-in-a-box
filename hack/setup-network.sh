@@ -10,10 +10,13 @@ echo "Customize network in progress..."
 # Some environments disable ipv6 per default
 sysctl -w net.ipv6.conf.all.disable_ipv6=0
 
-# Create and configure overlay-tun interface
-ip link add overlay-tun type ip6tnl mode any external ttl 32
+# Create and configure overlay-tun interface (idempotent: recent dpservice
+# images create the interface themselves on startup, so all operations here
+# tolerate pre-existing state).
+ip link add overlay-tun type ip6tnl mode any external ttl 32 2>/dev/null || true
 ip link set mtu 1500 dev overlay-tun
-ip addr add 2001:db8:dead:beef::1/128 dev overlay-tun
+ip addr show dev overlay-tun | grep -q '2001:db8:dead:beef::1/128' || \
+  ip addr add 2001:db8:dead:beef::1/128 dev overlay-tun
 ip link set overlay-tun up
 
 # Configure system settings
@@ -22,8 +25,9 @@ sysctl -w net.ipv4.conf.eth0.rp_filter=0
 sysctl -w net.ipv4.ip_forward=1
 sysctl -w net.ipv4.conf.overlay-tun.rp_filter=0
 
-# Add iptables rule
-iptables -t mangle -I PREROUTING 1 -i overlay-tun -j MARK --set-mark 1
+# Add iptables rule (skip if already present)
+iptables -t mangle -C PREROUTING -i overlay-tun -j MARK --set-mark 1 2>/dev/null || \
+  iptables -t mangle -I PREROUTING 1 -i overlay-tun -j MARK --set-mark 1
 
 # Configure routing
 # Use the iproute2 drop-in directory instead of appending to the legacy
@@ -32,15 +36,15 @@ iptables -t mangle -I PREROUTING 1 -i overlay-tun -j MARK --set-mark 1
 # mkdir -p ensures the directory exists on minimal container rootfs.
 mkdir -p /etc/iproute2/rt_tables.d
 echo '100 ironcore_eth0' > /etc/iproute2/rt_tables.d/ironcore.conf
-ip route add default via $(ip r | grep default | awk '{print $3}') dev eth0 table 100
-ip rule add fwmark 1 lookup 100
+ip route replace default via $(ip r | grep default | awk '{print $3}') dev eth0 table 100
+ip rule show | grep -q 'fwmark 0x1 lookup 100' || ip rule add fwmark 1 lookup 100
 
 # Add IPv6 route with retry mechanism
 for i in {1..10}; do
-    ip -6 route add 2001:db8:fefe::/48 via fe80::1 dev dtap0 && break || \
+    ip -6 route replace 2001:db8:fefe::/48 via fe80::1 dev dtap0 && break || \
     { echo "Retrying route addition in 1s..."; sleep 1; }
 done
 
 # Add permanent neighbor entry
-ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:00 dev dtap0 router nud permanent
-ip -6 neigh add fe80::1 lladdr 22:22:22:22:22:01 dev dtap1 router nud permanent
+ip -6 neigh replace fe80::1 lladdr 22:22:22:22:22:00 dev dtap0 router nud permanent
+ip -6 neigh replace fe80::1 lladdr 22:22:22:22:22:01 dev dtap1 router nud permanent

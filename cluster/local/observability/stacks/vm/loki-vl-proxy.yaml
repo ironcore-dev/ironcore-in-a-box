@@ -1,0 +1,65 @@
+# Loki-VL-proxy: translates LogQL queries from Grafana's native Loki
+# datasource into LogsQL and forwards them to VictoriaLogs.
+#
+# This enables Grafana's Explore view, Logs Drilldown, and LogQL alerting
+# against VictoriaLogs without requiring a custom datasource plugin.
+#
+# Sits alongside the native VL datasource plugin — same data, two UIs:
+#   * VictoriaLogs datasource → LogsQL (native VL query language)
+#   * Loki datasource via proxy → LogQL (Grafana-native experience)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki-vl-proxy
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/name: loki-vl-proxy
+    ironcore.dev/observability-stack: vm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki-vl-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: loki-vl-proxy
+    spec:
+      containers:
+        - name: proxy
+          image: ghcr.io/reliablyobserve/loki-vl-proxy:1.63.1
+          args:
+            - -backend=http://vlsingle-vlogs.monitoring-vm.svc:9428
+          ports:
+            - name: http
+              containerPort: 3100
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-vl-proxy
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/name: loki-vl-proxy
+    ironcore.dev/observability-stack: vm
+spec:
+  selector:
+    app.kubernetes.io/name: loki-vl-proxy
+  ports:
+    - name: http
+      port: 3100
+      targetPort: http
+      protocol: TCP

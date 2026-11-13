@@ -12,3 +12,4 @@ images:
 patches:
   - path: patch-apiserver-deployment.yaml
   - path: patch-apiserver-service.yaml
+  - path: patch-controller-manager-metrics-port.yaml

@@ -1,0 +1,105 @@
+# vmselect: unified query endpoint across short-term + long-term VMSingle.
+#
+# Queries both VMSingle instances and merges results transparently.
+# Grafana points at vmselect instead of the individual VMSingle services.
+# Uses -dedup.minScrapeInterval=1ms to deduplicate overlapping data points
+# from the two stores (the short-term store has raw 15s data, the long-term
+# has 1m aggregated — for the overlap window both may return data).
+#
+# The VMSingle pods expose the vmstorage protocol on :8401 via the
+# -vmselectAddr extraArg. The operator doesn't expose this port on the
+# Service, so we create explicit Services below.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmsingle-vm-vmselect
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/name: vmselect-backend
+spec:
+  selector:
+    app.kubernetes.io/name: vmsingle
+    app.kubernetes.io/instance: vm
+  ports:
+    - name: vmselect
+      port: 8401
+      targetPort: 8401
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmsingle-vm-longterm-vmselect
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/name: vmselect-backend
+spec:
+  selector:
+    app.kubernetes.io/name: vmsingle
+    app.kubernetes.io/instance: vm-longterm
+  ports:
+    - name: vmselect
+      port: 8401
+      targetPort: 8401
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmselect
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/name: vmselect
+    ironcore.dev/observability-stack: vm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vmselect
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vmselect
+    spec:
+      containers:
+        - name: vmselect
+          image: victoriametrics/vmselect:v1.148.0-cluster
+          args:
+            - -storageNode=vmsingle-vm-vmselect.monitoring-vm.svc:8401
+            - -storageNode=vmsingle-vm-longterm-vmselect.monitoring-vm.svc:8401
+            - -dedup.minScrapeInterval=1ms
+            - -httpListenAddr=:8481
+          ports:
+            - name: http
+              containerPort: 8481
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vmselect
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/name: vmselect
+    ironcore.dev/observability-stack: vm
+spec:
+  selector:
+    app.kubernetes.io/name: vmselect
+  ports:
+    - name: http
+      port: 8481
+      targetPort: http
+      protocol: TCP

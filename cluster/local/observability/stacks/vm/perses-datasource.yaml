@@ -1,0 +1,73 @@
+# Perses GlobalDatasources for the vm stack.
+#
+# Analogue of grafana-datasource.yaml: vm contributes its datasources for
+# the shared Perses instance (monitoring-ui). Perses merges every stack's
+# perses-datasources-<stack> ConfigMap into its provisioning folder via a
+# projected volume, so this file is self-contained: dropping the vm stack
+# removes its Perses datasources without touching the shared layer.
+#
+# Both use the Perses server-side proxy (kind: HTTPProxy); stack services
+# are ClusterIP and browsers cannot reach them directly.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: perses-datasources-vm
+  namespace: monitoring-ui
+  labels:
+    ironcore.dev/observability-stack: vm
+data:
+  # One key per GlobalDatasource; Perses accepts any yaml file in the
+  # provisioning folder.
+  vm-metrics.yaml: |
+    kind: GlobalDatasource
+    metadata:
+      name: vm-metrics
+    spec:
+      display:
+        name: VictoriaMetrics (vm)
+      default: false
+      plugin:
+        kind: PrometheusDatasource
+        spec:
+          proxy:
+            kind: HTTPProxy
+            spec:
+              # vmselect's unified select path (raw + recording-rule tiers)
+              url: http://vmselect.monitoring-vm.svc.cluster.local:8481/select/0/prometheus
+              allowedEndpoints:
+                - method: POST
+                  endpointPattern: /api/v1/query
+                - method: POST
+                  endpointPattern: /api/v1/query_range
+                - method: POST
+                  endpointPattern: /api/v1/series
+                - method: POST
+                  endpointPattern: /api/v1/labels
+                - method: GET
+                  endpointPattern: /api/v1/metadata
+                - method: GET
+                  endpointPattern: /api/v1/label/([a-zA-Z0-9_-]+)/values
+  vm-logs.yaml: |
+    kind: GlobalDatasource
+    metadata:
+      name: vm-logs
+    spec:
+      display:
+        name: VictoriaLogs (vm)
+      default: false
+      plugin:
+        kind: VictoriaLogsDatasource
+        spec:
+          proxy:
+            kind: HTTPProxy
+            spec:
+              url: http://vlsingle-vlogs.monitoring-vm.svc.cluster.local:9428
+              allowedEndpoints:
+                - method: POST
+                  endpointPattern: /select/logsql/query
+                - method: POST
+                  endpointPattern: /select/logsql/stats_query_range
+                - method: POST
+                  endpointPattern: /select/logsql/field_names
+                - method: POST
+                  endpointPattern: /select/logsql/field_values

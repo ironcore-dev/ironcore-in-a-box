@@ -1,0 +1,37 @@
+# `vm` stack: VictoriaMetrics + VictoriaLogs + vmagent + fluent-bit
+# Namespace: monitoring-vm (each resource declares its own namespace
+# explicitly, so there is no top-level `namespace:` transformer here — that
+# would incorrectly rewrite the grafana-datasource.yaml which needs to
+# land in monitoring-ui).
+#
+# Data-plane role: the SAP-internal-adoption candidate (Gardener, BTP CF).
+# Metrics via vmagent scrape into VMSingle; logs via fluent-bit push into
+# VLSingle over its Loki-compatible endpoint. Both stores at 1d retention
+# (the minimum VM enforces at the store level) for local iiab testing;
+# long-term store (~1 week) will be a second VMSingle/VLSingle that
+# receives streaming-aggregated / forwarded data.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - operator
+  - vmsingle.yaml
+  - vmsingle-longterm.yaml
+  - vmselect.yaml
+  - vlogs.yaml
+  - vmagent.yaml
+  - vmagent-rbac.yaml
+  - vmalert.yaml
+  - vmrule-longterm.yaml
+  - podscrapes.yaml
+  # storage (only matches when `make up-storage` added rook/ceph-volume-provider)
+  - podscrapes-storage.yaml
+  - fluent-bit.yaml
+  - fluent-bit-rbac.yaml
+  - loki-vl-proxy.yaml
+  - grafana-datasource.yaml
+  - perses-datasource.yaml
+  - perses-dashboards.yaml
+  - grafana-dashboards.yaml
+  - grafana-dashboards-paths.yaml

@@ -1,0 +1,363 @@
+# Provisioned Grafana dashboards for the vm stack (and cross-stack comparison).
+#
+# Two dashboards, both keyed off label values actually present in the stores:
+#
+#   * "IronCore / Controllers" (uid ironcore-controllers)
+#     PromQL over vm-metrics (vmselect). Template var $source switches
+#     between the vmagent-scraped series (source=vm) and the otel-collector
+#     copies (source=otel) — same metrics, two collection paths.
+#
+#   * "IronCore / Logs" (uid ironcore-logs)
+#     Three-column comparison of the same log data through three query paths:
+#       1. prom stack:  Loki + LogQL            (uid prom-logs)
+#       2. vm stack:    VL native LogsQL        (uid vm-logs)
+#       3. vm stack:    Loki-compat via proxy   (uid vm-logs-loki)
+#     This is the Experiment B side-by-side the proposal discusses.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-vm
+  namespace: monitoring-ui
+  labels:
+    ironcore.dev/observability-stack: vm
+data:
+  ironcore-controllers.json: |
+    {
+      "title": "IronCore / Controllers",
+      "uid": "ironcore-controllers",
+      "tags": ["ironcore", "metrics", "testbed"],
+      "timezone": "browser",
+      "schemaVersion": 41,
+      "refresh": "30s",
+      "time": {"from": "now-3h", "to": "now"},
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "type": "query",
+            "label": "Namespace",
+            "datasource": {"uid": "vm-metrics"},
+            "query": "label_values(up, namespace)",
+            "refresh": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {"selected": true, "text": ["All"], "value": ["$__all"]}
+          },
+          {
+            "name": "source",
+            "type": "query",
+            "label": "Pipeline",
+            "datasource": {"uid": "vm-metrics"},
+            "query": "label_values(up, source)",
+            "refresh": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {"selected": true, "text": ["All"], "value": ["$__all"]}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "stat", "title": "Targets up",
+          "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum(up{namespace=~\"$namespace\", source=~\"$source\"})", "legendFormat": "up"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "green"}, "mappings": [{"type": "value", "options": {"0": {"color": "red", "text": "DOWN"}}}]}, "overrides": []},
+          "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}}
+        },
+        {
+          "type": "timeseries", "title": "up by namespace",
+          "gridPos": {"x": 4, "y": 0, "w": 10, "h": 4},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (namespace) (up{namespace=~\"$namespace\", source=~\"$source\"})", "legendFormat": "{{namespace}}"}],
+          "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "leader election master status",
+          "gridPos": {"x": 14, "y": 0, "w": 10, "h": 4},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "leader_election_master_status{namespace=~\"$namespace\", source=~\"$source\"}", "legendFormat": "{{namespace}} / {{pod}}"}],
+          "fieldConfig": {"defaults": {"unit": "short", "min": 0, "max": 1}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "reconcile rate (ops/s)",
+          "gridPos": {"x": 0, "y": 4, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_total{namespace=~\"$namespace\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "reconcile error rate (ops/s)",
+          "gridPos": {"x": 8, "y": 4, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_errors_total{namespace=~\"$namespace\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "reconcile latency p95 (s)",
+          "gridPos": {"x": 16, "y": 4, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, controller) (rate(controller_runtime_reconcile_time_seconds_bucket{namespace=~\"$namespace\", source=~\"$source\"}[$__rate_interval])))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "workqueue depth",
+          "gridPos": {"x": 0, "y": 12, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (name, namespace) (workqueue_depth{namespace=~\"$namespace\", source=~\"$source\"})", "legendFormat": "{{name}} ({{namespace}})"}],
+          "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "workqueue adds (ops/s)",
+          "gridPos": {"x": 8, "y": 12, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (name) (rate(workqueue_adds_total{namespace=~\"$namespace\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "{{name}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "workqueue longest running processor (s)",
+          "gridPos": {"x": 16, "y": 12, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "max by (name) (workqueue_longest_running_processor_seconds{namespace=~\"$namespace\", source=~\"$source\"})", "legendFormat": "{{name}}"}],
+          "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "resident memory",
+          "gridPos": {"x": 0, "y": 20, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "process_resident_memory_bytes{namespace=~\"$namespace\", source=~\"$source\"}", "legendFormat": "{{namespace}} / {{pod}}"}],
+          "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "cpu usage (cores)",
+          "gridPos": {"x": 8, "y": 20, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (namespace) (rate(process_cpu_seconds_total{namespace=~\"$namespace\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "{{namespace}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "goroutines",
+          "gridPos": {"x": 16, "y": 20, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "go_goroutines{namespace=~\"$namespace\", source=~\"$source\"}", "legendFormat": "{{namespace}} / {{pod}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        }
+      ]
+    }
+  ironcore-logs.json: |
+    {
+      "title": "IronCore / Logs",
+      "uid": "ironcore-logs",
+      "tags": ["ironcore", "logs", "testbed"],
+      "timezone": "browser",
+      "schemaVersion": 41,
+      "refresh": "30s",
+      "time": {"from": "now-1h", "to": "now"},
+      "templating": {
+        "list": [
+          {
+            "name": "log_namespace",
+            "type": "query",
+            "label": "Namespace",
+            "datasource": {"uid": "vm-logs-loki"},
+            "query": "label_values(kubernetes_namespace_name)",
+            "refresh": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {"selected": true, "text": ["All"], "value": ["$__all"]}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "timeseries", "title": "log volume /s [prom stack: Loki + LogQL]",
+          "gridPos": {"x": 0, "y": 0, "w": 8, "h": 8},
+          "datasource": {"uid": "prom-logs"},
+          "targets": [{"refId": "A", "expr": "sum by (kubernetes_namespace_name) (count_over_time({job=\"fluent-bit-prom\"}[$__interval]))", "legendFormat": "{{kubernetes_namespace_name}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "log volume /s [vm stack: VL native LogsQL]",
+          "gridPos": {"x": 8, "y": 0, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "* | stats by (kubernetes_namespace_name) count() as hits", "legendFormat": "{{kubernetes_namespace_name}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "log volume /s [vm stack: Loki-via-proxy LogQL]",
+          "gridPos": {"x": 16, "y": 0, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-logs-loki"},
+          "targets": [{"refId": "A", "expr": "sum by (kubernetes_namespace_name) (count_over_time({job=\"fluent-bit-vm\"}[$__interval]))", "legendFormat": "{{kubernetes_namespace_name}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        },
+        {
+          "type": "logs", "title": "error lines [prom stack: Loki]",
+          "gridPos": {"x": 0, "y": 8, "w": 8, "h": 12},
+          "datasource": {"uid": "prom-logs"},
+          "targets": [{"refId": "A", "expr": "{job=\"fluent-bit-prom\", kubernetes_namespace_name=~\"$log_namespace\"} |~ \"(?i)error\""}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        },
+        {
+          "type": "logs", "title": "error lines [vm stack: VL native]",
+          "gridPos": {"x": 8, "y": 8, "w": 8, "h": 12},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "kubernetes_namespace_name:~\"$log_namespace\" AND error | format \"<_msg> | <caller>\" as _msg"}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        },
+        {
+          "type": "logs", "title": "error lines [vm stack: via Loki proxy]",
+          "gridPos": {"x": 16, "y": 8, "w": 8, "h": 12},
+          "datasource": {"uid": "vm-logs-loki"},
+          "targets": [{"refId": "A", "expr": "{job=\"fluent-bit-vm\", kubernetes_namespace_name=~\"$log_namespace\"} |~ \"(?i)error\""}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        },
+        {
+          "type": "logs", "title": "all lines [prom stack: Loki]",
+          "gridPos": {"x": 0, "y": 20, "w": 8, "h": 12},
+          "datasource": {"uid": "prom-logs"},
+          "targets": [{"refId": "A", "expr": "{job=\"fluent-bit-prom\", kubernetes_namespace_name=~\"$log_namespace\"}"}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        },
+        {
+          "type": "logs", "title": "all lines [vm stack: VL native]",
+          "gridPos": {"x": 8, "y": 20, "w": 8, "h": 12},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "kubernetes_namespace_name:~\"$log_namespace\" | format \"<_msg> | <caller>\" as _msg"}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        },
+        {
+          "type": "logs", "title": "all lines [vm stack: via Loki proxy]",
+          "gridPos": {"x": 16, "y": 20, "w": 8, "h": 12},
+          "datasource": {"uid": "vm-logs-loki"},
+          "targets": [{"refId": "A", "expr": "{job=\"fluent-bit-vm\", kubernetes_namespace_name=~\"$log_namespace\"}"}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        }
+      ]
+    }
+  ironcore-overlay-network.json: |
+    {
+      "title": "IronCore / Overlay Network (metalnet · metalbond · dpservice)",
+      "uid": "ironcore-overlay-network",
+      "tags": ["ironcore", "overlay", "metalnet", "metalbond", "dpservice", "testbed"],
+      "timezone": "browser",
+      "schemaVersion": 41,
+      "refresh": "30s",
+      "time": {"from": "now-3h", "to": "now"},
+      "description": "Data path: metalnet (controller) -> metalbond (route exchange) -> dpservice (DPDK dataplane). Metrics exist for metalnet only; metalbond/dpservice are log-only in the iiab testbed.",
+      "templating": {
+        "list": [
+          {
+            "name": "source",
+            "type": "query",
+            "label": "Pipeline",
+            "datasource": {"uid": "vm-metrics"},
+            "query": "label_values(up{namespace=\"metalnet-system\"}, source)",
+            "refresh": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {"selected": true, "text": ["All"], "value": ["$__all"]}
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "stat", "title": "metalnet up",
+          "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum(up{namespace=\"metalnet-system\", source=~\"$source\"})", "legendFormat": "up"}],
+          "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "green"}, "mappings": [{"type": "value", "options": {"0": {"color": "red", "text": "DOWN"}}}]}, "overrides": []},
+          "options": {"colorMode": "background", "graphMode": "none", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}}
+        },
+        {
+          "type": "timeseries", "title": "metalnet: resident memory",
+          "gridPos": {"x": 4, "y": 0, "w": 10, "h": 4},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "process_resident_memory_bytes{namespace=\"metalnet-system\", source=~\"$source\"}", "legendFormat": "{{pod}}"}],
+          "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "metalnet: cpu (cores) & goroutines",
+          "gridPos": {"x": 14, "y": 0, "w": 10, "h": 4},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [
+            {"refId": "A", "expr": "rate(process_cpu_seconds_total{namespace=\"metalnet-system\", source=~\"$source\"}[$__rate_interval])", "legendFormat": "cpu {{pod}}"},
+            {"refId": "B", "expr": "go_goroutines{namespace=\"metalnet-system\", source=~\"$source\"} / 1000", "legendFormat": "goroutines/1k"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "metalnet: reconcile rate by controller (ops/s)",
+          "gridPos": {"x": 0, "y": 4, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_total{namespace=\"metalnet-system\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "metalnet: reconcile errors (ops/s)",
+          "gridPos": {"x": 8, "y": 4, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (controller) (rate(controller_runtime_reconcile_errors_total{namespace=\"metalnet-system\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "metalnet: reconcile latency p95 (s)",
+          "gridPos": {"x": 16, "y": 4, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, controller) (rate(controller_runtime_reconcile_time_seconds_bucket{namespace=\"metalnet-system\", source=~\"$source\"}[$__rate_interval])))", "legendFormat": "{{controller}}"}],
+          "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "metalnet: workqueue depth",
+          "gridPos": {"x": 0, "y": 12, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (name) (workqueue_depth{namespace=\"metalnet-system\", source=~\"$source\"})", "legendFormat": "{{name}}"}],
+          "fieldConfig": {"defaults": {"unit": "short", "min": 0}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "metalnet: rest client requests by code (ops/s)",
+          "gridPos": {"x": 8, "y": 12, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [{"refId": "A", "expr": "sum by (code) (rate(rest_client_requests_total{namespace=\"metalnet-system\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "{{code}}"}],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "timeseries", "title": "metalnet: cert read errors & webhook panics (ops/s)",
+          "gridPos": {"x": 16, "y": 12, "w": 8, "h": 8},
+          "datasource": {"uid": "vm-metrics"},
+          "targets": [
+            {"refId": "A", "expr": "sum(rate(certwatcher_read_certificate_errors_total{namespace=\"metalnet-system\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "cert read errors"},
+            {"refId": "B", "expr": "sum(rate(controller_runtime_webhook_panics_total{namespace=\"metalnet-system\", source=~\"$source\"}[$__rate_interval]))", "legendFormat": "webhook panics"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "ops"}, "overrides": []}
+        },
+        {
+          "type": "logs", "title": "metalnet logs (zap JSON / console)",
+          "gridPos": {"x": 0, "y": 20, "w": 8, "h": 14},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "kubernetes_namespace_name:metalnet-system | format \"<_msg> | <caller>\" as _msg"}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        },
+        {
+          "type": "logs", "title": "metalbond logs (logrus text)",
+          "gridPos": {"x": 8, "y": 20, "w": 8, "h": 14},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "kubernetes_container_name:metalbond | format \"<_msg>\" as _msg"}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        },
+        {
+          "type": "logs", "title": "dpservice logs (unstructured DPDK EAL)",
+          "gridPos": {"x": 16, "y": 20, "w": 8, "h": 14},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "kubernetes_namespace_name:dpservice-system | format \"<_msg>\" as _msg"}],
+          "options": {"showTime": true, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending"}
+        },
+        {
+          "type": "timeseries", "title": "log volume /s across overlay components (native LogsQL stats)",
+          "gridPos": {"x": 0, "y": 34, "w": 24, "h": 8},
+          "datasource": {"uid": "vm-logs"},
+          "targets": [{"refId": "A", "expr": "kubernetes_namespace_name:~\"metalnet-system|dpservice-system|default\" | stats by (kubernetes_namespace_name, kubernetes_container_name) count() as lines", "legendFormat": "{{kubernetes_namespace_name}}/{{kubernetes_container_name}}"}],
+          "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+          "description": "metalbond and metalbond-client live in namespace 'default' alongside other infra pods; filter visually by container name."
+        }
+      ]
+    }

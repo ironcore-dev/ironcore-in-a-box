@@ -1,0 +1,99 @@
+# VMPodScrapes for the `vm` stack.
+#
+# One VMPodScrape per group of IronCore emitters, grouped by the port their
+# controller-runtime /metrics endpoint listens on. All emitters share the
+# same auth story (Bearer token from the vmagent SA, HTTPS with insecure-
+# skip-verify against the pod's serving cert).
+#
+# Groups:
+#   - `ironcore-controllers-8443`: ironcore-controller-manager,
+#     ironcore-net-controller-manager, apinetlet-controller-manager,
+#     metalnetlet-controller-manager (all controller-runtime v0.15+ default)
+#   - `metalnet-28080`: metalnet-controller-manager (iiab overrides port)
+#   - `libvirt-provider-8080`: libvirt-provider-controller-manager (iiab
+#     overrides port)
+#
+# Each VMPodScrape:
+#   * Selects pods by label `control-plane: controller-manager`. This label
+#     is present on all 6 emitters and NOT on the two aggregated apiservers
+#     (which have `control-plane: apiserver`), so the selector correctly
+#     excludes them.
+#   * Adds a `namespaceSelector.matchNames` filter to restrict which
+#     namespace's controller-manager pods are picked up — because otherwise
+#     one VMPodScrape at :8443 would also try to scrape metalnet's manager
+#     which listens on 28080 and would fail.
+#
+# The `ironcore.dev/observability-stack: vm` label is what VMAgent's
+# podScrapeSelector matches.
+
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: ironcore-controllers-8443
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+spec:
+  namespaceSelector:
+    matchNames:
+      - ironcore-system
+      - ironcore-net-system
+      - apinetlet-system
+      - metalnetlet-system
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  podMetricsEndpoints:
+    - targetPort: 8443
+      scheme: https
+      path: /metrics
+      interval: 15s
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tlsConfig:
+        insecureSkipVerify: true
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: metalnet-28080
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+spec:
+  namespaceSelector:
+    matchNames:
+      - metalnet-system
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  podMetricsEndpoints:
+    - targetPort: 28080
+      scheme: https
+      path: /metrics
+      interval: 15s
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tlsConfig:
+        insecureSkipVerify: true
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: libvirt-provider-8080
+  namespace: monitoring-vm
+  labels:
+    ironcore.dev/observability-stack: vm
+spec:
+  namespaceSelector:
+    matchNames:
+      - libvirt-provider
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  podMetricsEndpoints:
+    - targetPort: 8080
+      scheme: https
+      path: /metrics
+      interval: 15s
+      bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+      tlsConfig:
+        insecureSkipVerify: true

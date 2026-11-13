@@ -1,0 +1,53 @@
+# VMAgent for the `vm` stack.
+#
+# Scrapes /metrics endpoints on IronCore components using the VMPodScrape
+# CRs in podscrapes.yaml, remote-writes to the local VMSingle store.
+#
+# Key configuration:
+#   - `podScrapeSelector` targets `ironcore.dev/observability-stack: vm` so
+#     it only picks up VMPodScrapes intended for this stack.
+#   - `externalLabels: source=vm` tags every sample so it's distinguishable
+#     from otel-Collector-scraped samples once the otel stack starts
+#     writing into the same VM store.
+#   - `remoteWrite` points at the VMSingle's insert endpoint. The operator
+#     creates a Service named `vmsingle-vm.monitoring-vm.svc:8429` (default
+#     port for VMSingle inserts).
+#   - `scrapeInterval: 15s` — Prometheus-standard default.
+#   - `loggerFormat: json` on extraArgs — vmagent's own logs are JSON.
+#
+# A second remote_write target for the future long-term (1 week) tier will
+# be added here once that VMSingle exists. Streaming aggregation config
+# for that target lives on vmagent, not on the receiving store.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMAgent
+metadata:
+  name: vm
+  namespace: monitoring-vm
+  labels:
+    app.kubernetes.io/component: metrics-agent
+    ironcore.dev/observability-stack: vm
+spec:
+  replicaCount: 1
+  serviceAccountName: vmagent
+  scrapeInterval: 15s
+  externalLabels:
+    source: vm
+  # Only pick up VMPodScrapes that opt in to this stack via label. Prevents
+  # cross-stack contamination if the otel stack later ships its own
+  # VMPodScrapes (unlikely, but the discipline matters).
+  podScrapeSelector:
+    matchLabels:
+      ironcore.dev/observability-stack: vm
+  # Scrape ANY namespace, not just monitoring-vm. IronCore emitters live
+  # in ironcore-system, metalnet-system, libvirt-provider, etc.
+  podScrapeNamespaceSelector: {}
+  remoteWrite:
+    - url: http://vmsingle-vm.monitoring-vm.svc:8429/api/v1/write
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  extraArgs:
+    loggerFormat: json

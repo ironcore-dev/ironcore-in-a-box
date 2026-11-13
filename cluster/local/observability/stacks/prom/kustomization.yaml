@@ -1,0 +1,26 @@
+# `prom` stack: Prometheus + Loki + fluent-bit
+# Namespace: monitoring-prom (each resource declares its own namespace
+# explicitly — the grafana-datasource lands in monitoring-ui).
+#
+# Role in the comparison: reference / baseline. The "standard" CNCF
+# observability stack that most Kubernetes users reach for first.
+# Prometheus for metrics (via prom-operator PodMonitors), Loki for logs
+# (via fluent-bit Deployment), Grafana datasources in monitoring-ui.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - operator
+  - prometheus.yaml
+  - prometheus-rbac.yaml
+  - podmonitors.yaml
+  # storage (only matches when `make up-storage` added rook/ceph-volume-provider)
+  - podmonitors-storage.yaml
+  - thanos.yaml
+  - loki.yaml
+  - fluent-bit.yaml
+  - fluent-bit-rbac.yaml
+  - grafana-datasource.yaml
+  - perses-datasource.yaml
+  - perses-dashboards.yaml

@@ -1,0 +1,30 @@
+# Grafana datasources for the `prom` stack.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources-prom
+  namespace: monitoring-ui
+  labels:
+    ironcore.dev/observability-stack: prom
+data:
+  prom-datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus (prom)
+        uid: prom-metrics
+        type: prometheus
+        access: proxy
+        # Thanos querier: merges live (sidecar) + long-term (object blocks).
+        # This is the /api/v1/query-range entry point Grafana should use.
+        url: http://thanos-query.monitoring-prom.svc.cluster.local:10902
+        isDefault: false
+        editable: true
+        jsonData:
+          timeInterval: 15s
+      - name: Loki (prom)
+        uid: prom-logs
+        type: loki
+        access: proxy
+        url: http://loki.monitoring-prom.svc.cluster.local:3100
+        isDefault: false
+        editable: true

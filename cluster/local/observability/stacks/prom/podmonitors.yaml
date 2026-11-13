@@ -1,0 +1,91 @@
+# PodMonitors for the `prom` stack.
+#
+# Same targets as the vm stack's VMPodScrapes — IronCore controller-managers.
+# Uses named port 'metrics' since pods declare containerPort with that name.
+#
+# Auth: references the prometheus-prom-token Secret which is a
+# long-lived SA token created via the tokenRequest annotation pattern.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ironcore-controllers-8443
+  namespace: monitoring-prom
+  labels:
+    ironcore.dev/observability-stack: prom
+spec:
+  namespaceSelector:
+    matchNames:
+      - ironcore-system
+      - ironcore-net-system
+      - apinetlet-system
+      - metalnetlet-system
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  podMetricsEndpoints:
+    - port: metrics
+      scheme: https
+      path: /metrics
+      interval: 15s
+      authorization:
+        type: Bearer
+        credentials:
+          key: token
+          name: prometheus-prom-token
+      tlsConfig:
+        insecureSkipVerify: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: metalnet-28080
+  namespace: monitoring-prom
+  labels:
+    ironcore.dev/observability-stack: prom
+spec:
+  namespaceSelector:
+    matchNames:
+      - metalnet-system
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  podMetricsEndpoints:
+    - port: metrics
+      scheme: https
+      path: /metrics
+      interval: 15s
+      authorization:
+        type: Bearer
+        credentials:
+          key: token
+          name: prometheus-prom-token
+      tlsConfig:
+        insecureSkipVerify: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: libvirt-provider-8080
+  namespace: monitoring-prom
+  labels:
+    ironcore.dev/observability-stack: prom
+spec:
+  namespaceSelector:
+    matchNames:
+      - libvirt-provider
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  podMetricsEndpoints:
+    - port: metrics
+      scheme: https
+      path: /metrics
+      interval: 15s
+      authorization:
+        type: Bearer
+        credentials:
+          key: token
+          name: prometheus-prom-token
+      tlsConfig:
+        insecureSkipVerify: true

@@ -1,0 +1,53 @@
+# Storage scrapes for the `prom` stack (optional, requires `make up-storage`).
+#
+# Same targets as the vm stack's podscrapes-storage.yaml. See that file for
+# the rationale: rook's monitoring toggle remains off and the mgr pods are
+# scraped directly so prom / vm / otel stay symmetric.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ceph-volume-provider-8080
+  namespace: monitoring-prom
+  labels:
+    ironcore.dev/observability-stack: prom
+spec:
+  namespaceSelector:
+    matchNames:
+      - rook-ceph
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  podMetricsEndpoints:
+    - targetPort: 8080
+      scheme: https
+      path: /metrics
+      interval: 15s
+      authorization:
+        type: Bearer
+        credentials:
+          key: token
+          name: prometheus-prom-token
+      tlsConfig:
+        insecureSkipVerify: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: rook-ceph-mgr-9283
+  namespace: monitoring-prom
+  labels:
+    ironcore.dev/observability-stack: prom
+spec:
+  namespaceSelector:
+    matchNames:
+      - rook-ceph
+  selector:
+    matchLabels:
+      app: rook-ceph-mgr
+      ceph_daemon_type: mgr
+  podMetricsEndpoints:
+    - targetPort: 9283
+      scheme: http
+      path: /metrics
+      interval: 15s
