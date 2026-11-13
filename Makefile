@@ -42,7 +42,7 @@ help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 .PHONY: guard-cluster
-guard-cluster: ## Verify the target kind cluster exists and kubectl context is correct
+guard-cluster: kubectl ## Verify the target kind cluster exists, kubectl context is correct, and the cluster version matches this checkout
 	@if ! $(KIND) get clusters 2>/dev/null | grep -qx '$(KIND_CLUSTER_NAME)'; then \
 		echo "ERROR: kind cluster '$(KIND_CLUSTER_NAME)' does not exist."; \
 		echo "       Run 'make kind-cluster' to create it first."; \
@@ -52,6 +52,20 @@ guard-cluster: ## Verify the target kind cluster exists and kubectl context is c
 	if [ "$$CURRENT_CTX" != "$(KIND_CONTEXT)" ]; then \
 		echo "ERROR: Current kubectl context is '$$CURRENT_CTX', expected '$(KIND_CONTEXT)'."; \
 		echo "       Run: kubectl config use-context $(KIND_CONTEXT)"; \
+		exit 1; \
+	fi
+	@SERVER_VERSION=$$($(KUBECTL_CTX) get --raw /version 2>/dev/null); \
+	SERVER_MAJOR=$$(printf '%s' "$$SERVER_VERSION" | grep -o '"major": *"[0-9]*"' | grep -o '[0-9]*'); \
+	SERVER_MINOR=$$(printf '%s' "$$SERVER_VERSION" | grep -o '"minor": *"[0-9]*"' | grep -o '[0-9]*'); \
+	EXPECTED_MAJOR=$$(echo '$(KUBECTL_VERSION)' | cut -d. -f1 | tr -d 'v'); \
+	EXPECTED_MINOR=$$(echo '$(KUBECTL_VERSION)' | cut -d. -f2); \
+	if [ -z "$$SERVER_MAJOR" ] || [ -z "$$SERVER_MINOR" ]; then \
+		echo "ERROR: could not determine Kubernetes version of cluster '$(KIND_CLUSTER_NAME)'."; \
+		exit 1; \
+	elif [ "$$SERVER_MAJOR.$$SERVER_MINOR" != "$$EXPECTED_MAJOR.$$EXPECTED_MINOR" ]; then \
+		echo "ERROR: kind cluster '$(KIND_CLUSTER_NAME)' runs Kubernetes $$SERVER_MAJOR.$$SERVER_MINOR, but this checkout targets $(KUBECTL_VERSION)."; \
+		echo "       The Kubernetes version is baked into the cluster's node image; recreate the cluster:"; \
+		echo "         make delete && make up"; \
 		exit 1; \
 	fi
 
@@ -73,6 +87,9 @@ kind-cluster: kind ## Create a kind cluster
 	@if $(KIND) get clusters 2>/dev/null | grep -qx '$(KIND_CLUSTER_NAME)'; then \
 		echo "kind cluster '$(KIND_CLUSTER_NAME)' already exists, skipping creation."; \
 	else \
+		case "$(KIND_IMAGE)" in \
+			ghcr.io/*) $(CRE) pull $(KIND_IMAGE);; \
+		esac; \
 		$(KIND_CTX) create cluster --image $(KIND_IMAGE) --config kind/kind-config.yaml; \
 	fi
 
@@ -96,7 +113,7 @@ up: prepare ironcore ironcore-net apinetlet setup-network metalnetlet libvirt-pr
 
 up-storage: up rook ceph-volume-provider
 
-prepare: prepare-local-config kubectl cmctl kind-cluster ## Prepare the environment
+prepare: prepare-local-config kubectl cmctl kind-cluster guard-cluster ## Prepare the environment
 	$(KUBECTL_CTX) apply -k .tmp/config/cluster/local/prepare
 	$(CMCTL) check api --wait 120s
 
@@ -216,7 +233,7 @@ endif
 ## Tool Versions
 KUBECTL_VERSION ?= v1.36.4
 KIND_VERSION ?= v0.32.0
-CMCTL_VERSION ?= latest
+CMCTL_VERSION ?= v2.6.1
 ADDLICENSE_VERSION ?= v1.1.1
 
 .PHONY: cmctl
